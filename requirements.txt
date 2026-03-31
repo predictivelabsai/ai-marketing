@@ -1,0 +1,17 @@
+streamlit
+python-dotenv
+requests
+openai
+arcadepy
+sqlalchemy
+psycopg2-binary
+langchain
+langchain-community
+langchain-openai
+pandas
+plotly
+prompt_toolkit>=3.0.0
+rich>=13.0.0
+playwright
+python-fasthtml
+langgraph

@@ -1,0 +1,70 @@
+{
+  "test_group": "agent_execution",
+  "total_tests": 10,
+  "passed": 10,
+  "failed": 0,
+  "skipped": 0,
+  "tests": [
+    {
+      "name": "content_copywriting",
+      "status": "passed",
+      "detail": "2125 chars",
+      "elapsed_seconds": 6.49
+    },
+    {
+      "name": "content_teaser",
+      "status": "passed",
+      "detail": "3930 chars",
+      "elapsed_seconds": 13.67
+    },
+    {
+      "name": "content_faq",
+      "status": "passed",
+      "detail": "4600 chars",
+      "elapsed_seconds": 17.16
+    },
+    {
+      "name": "compliance_review",
+      "status": "passed",
+      "detail": "4690 chars \u2014 flagged issues",
+      "elapsed_seconds": 13.67
+    },
+    {
+      "name": "compliance_risk_warnings",
+      "status": "passed",
+      "detail": "6103 chars",
+      "elapsed_seconds": 20.97
+    },
+    {
+      "name": "strategy_market_research",
+      "status": "passed",
+      "detail": "14023 chars",
+      "elapsed_seconds": 56.67
+    },
+    {
+      "name": "campaign_warmup",
+      "status": "passed",
+      "detail": "7990 chars",
+      "elapsed_seconds": 24.19
+    },
+    {
+      "name": "strategy_product_context",
+      "status": "passed",
+      "detail": "",
+      "elapsed_seconds": 0
+    },
+    {
+      "name": "channels_whatsapp_status",
+      "status": "passed",
+      "detail": "",
+      "elapsed_seconds": 0
+    },
+    {
+      "name": "channels_telegram_authorize",
+      "status": "passed",
+      "detail": "",
+      "elapsed_seconds": 0
+    }
+  ],
+  "timestamp": "2026-03-31T16:34:22.934460Z"
+}

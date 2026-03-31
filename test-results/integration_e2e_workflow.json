@@ -1,0 +1,44 @@
+{
+  "test_group": "e2e_workflow",
+  "total_tests": 7,
+  "passed": 7,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "e2e_step1_submit",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "e2e_step2_reject_wrong_persona",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "e2e_step3_approve_management",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "e2e_step4_view_docset",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "e2e_product_context_set",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "e2e_product_context_view",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "e2e_product_context_prompt_block",
+      "status": "passed",
+      "detail": ""
+    }
+  ],
+  "timestamp": "2026-03-31T16:34:22.939860Z"
+}

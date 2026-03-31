@@ -1,0 +1,35 @@
+{
+  "test_group": "xai_connectivity",
+  "total_tests": 5,
+  "passed": 5,
+  "failed": 0,
+  "skipped": 0,
+  "tests": [
+    {
+      "name": "api_key_present",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "xai_integration_configured",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "model_list",
+      "status": "passed",
+      "detail": "14 models: grok-3, grok-3-mini, grok-4-0709, grok-4-1-fast-non-reasoning, grok-4-1-fast-reasoning"
+    },
+    {
+      "name": "basic_generation",
+      "status": "passed",
+      "detail": "0.6s \u2014 'Hello!'"
+    },
+    {
+      "name": "streaming_generation",
+      "status": "passed",
+      "detail": "0.5s \u2014 '1, 2, 3, 4, 5'"
+    }
+  ],
+  "timestamp": "2026-03-31T16:31:50.084489Z"
+}

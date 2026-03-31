@@ -1,0 +1,54 @@
+{
+  "test_group": "session_context",
+  "total_tests": 9,
+  "passed": 9,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "product_context_defaults",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "product_context_set_from_args",
+      "status": "passed",
+      "detail": "['company', 'product', 'product_type', 'jurisdiction', 'audience']"
+    },
+    {
+      "name": "product_context_prompt_block",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance_doc_set",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance_doc_set_truncation",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance_approved_docs",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "user_persona_enum",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "session_context_init",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "session_context_integrations",
+      "status": "passed",
+      "detail": ""
+    }
+  ],
+  "timestamp": "2026-03-31T16:31:48.119790Z"
+}

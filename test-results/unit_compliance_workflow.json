@@ -1,0 +1,39 @@
+{
+  "test_group": "compliance_workflow",
+  "total_tests": 6,
+  "passed": 6,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "submit_document",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "approve_requires_management",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "approve_with_management",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "approve_empty_doc_fails",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "document_set_view",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "missing_required_param",
+      "status": "passed",
+      "detail": ""
+    }
+  ],
+  "timestamp": "2026-03-31T16:31:48.123803Z"
+}

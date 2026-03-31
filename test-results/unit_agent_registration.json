@@ -1,0 +1,419 @@
+{
+  "test_group": "agent_registration",
+  "total_tests": 82,
+  "passed": 82,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "all_nine_agents_registered",
+      "status": "passed",
+      "detail": "9 agents"
+    },
+    {
+      "name": "agent_names",
+      "status": "passed",
+      "detail": "['ads', 'campaign', 'channels', 'compliance', 'content', 'cro', 'seo', 'social', 'strategy']"
+    },
+    {
+      "name": "total_tool_count",
+      "status": "passed",
+      "detail": "54 tools"
+    },
+    {
+      "name": "content_has_tools",
+      "status": "passed",
+      "detail": "7 tools"
+    },
+    {
+      "name": "strategy_has_tools",
+      "status": "passed",
+      "detail": "6 tools"
+    },
+    {
+      "name": "social_has_tools",
+      "status": "passed",
+      "detail": "3 tools"
+    },
+    {
+      "name": "cro_has_tools",
+      "status": "passed",
+      "detail": "8 tools"
+    },
+    {
+      "name": "seo_has_tools",
+      "status": "passed",
+      "detail": "5 tools"
+    },
+    {
+      "name": "ads_has_tools",
+      "status": "passed",
+      "detail": "3 tools"
+    },
+    {
+      "name": "compliance_has_tools",
+      "status": "passed",
+      "detail": "6 tools"
+    },
+    {
+      "name": "campaign_has_tools",
+      "status": "passed",
+      "detail": "7 tools"
+    },
+    {
+      "name": "channels_has_tools",
+      "status": "passed",
+      "detail": "9 tools"
+    },
+    {
+      "name": "content:copywriting_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content:copy-editing_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content:social-content_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content:email-sequence_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content:faq_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content:teaser_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content:pitch-deck_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy:launch_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy:market-research_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy:competitor-matrix_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy:product-context_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy:ideas_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy:backtesting_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "social:post_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "social:schedule_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "social:analytics_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:page-cro_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:signup-flow_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:onboarding_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:form-cro_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:popup-cro_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:paywall-upgrade_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:churn-prevention_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro:free-tool-strategy_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "seo:audit_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "seo:programmatic_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "seo:ai-seo_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "seo:schema-markup_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "seo:competitor-alternatives_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "ads:paid-ads_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "ads:ab-test_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "ads:analytics-tracking_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance:review_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance:submit_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance:approve_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance:document-set_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance:target-market_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance:risk-warnings_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:create_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:warmup_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:workflow_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:monitor_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:follow-up_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:ab-test_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign:leads_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:report_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:email_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:whatsapp_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:telegram_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:instagram_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:twitter_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:tiktok_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:crm_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels:compare_valid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "content_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "strategy_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "social_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "cro_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "seo_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "ads_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "compliance_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "campaign_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "channels_no_duplicate_tools",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "resolve_content:copywriting",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "resolve_compliance:review",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "resolve_campaign:warmup",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "resolve_channels:report",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "resolve_alias_copy",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "resolve_unknown_agent",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "completions",
+      "status": "passed",
+      "detail": "130 completions"
+    }
+  ],
+  "timestamp": "2026-03-31T16:31:48.109497Z"
+}

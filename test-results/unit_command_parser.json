@@ -1,0 +1,89 @@
+{
+  "test_group": "command_parser",
+  "total_tests": 16,
+  "passed": 16,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "basic_command",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "quoted_values",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_help",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_exit",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "quit_maps_to_exit",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "empty_input_invalid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "missing_tool_invalid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "no_colon_invalid",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_exit",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_context",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_agents",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_quit",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_clear",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_history",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "builtin_help",
+      "status": "passed",
+      "detail": ""
+    },
+    {
+      "name": "multiple_args",
+      "status": "passed",
+      "detail": ""
+    }
+  ],
+  "timestamp": "2026-03-31T16:31:48.115113Z"
+}
