@@ -2,9 +2,9 @@ services:
   polly:
     build: .
     ports:
-      - "${PORT:-5001}:5001"
+      - "${PORT:-5055}:5055"
     environment:
-      - PORT=5001
+      - PORT=5055
       - XAI_API_KEY=${XAI_API_KEY}
       - XAI_MODEL=${XAI_MODEL:-grok-3}
       - ARCADE_API_KEY=${ARCADE_API_KEY:-}
@@ -15,7 +15,7 @@ services:
       - DB_URL=${DB_URL:-}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5055/')"]
       interval: 30s
       timeout: 10s
       retries: 3

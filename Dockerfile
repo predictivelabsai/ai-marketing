@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt python-fasthtml
 
 COPY . .
 
-ENV PORT=5001
-EXPOSE 5001
+ENV PORT=5055
+EXPOSE 5055
 
 CMD ["python", "web/app.py"]
