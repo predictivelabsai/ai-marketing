@@ -1,10 +1,21 @@
 """POLLY — FastHTML Web App for Financial Advisors."""
 import os
+import sys
+from pathlib import Path
+from typing import Dict
+
+from dotenv import load_dotenv
+
+# Ensure project root on path
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
+load_dotenv(ROOT / ".env")
 
 from fasthtml.common import *
 
 app, rt = fast_app(
     pico=False,
+    secret_key=os.environ.get("SESSION_SECRET", "polly-dev-secret-change-me"),
     hdrs=(
         Meta(charset="UTF-8"),
         Meta(name="viewport", content="width=device-width, initial-scale=1.0"),
@@ -72,18 +83,94 @@ NAV_CSS = """
     color: white;
     text-decoration: none;
 }
+.top-nav .nav-user {
+    color: var(--polly-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+"""
+
+AUTH_CSS = """
+.auth-wrapper {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: calc(100vh - 57px);
+    padding: 2rem;
+}
+.auth-logo { text-align: center; margin-bottom: 1.5rem; }
+.auth-logo .logo-icon {
+    font-size: 2.8rem; display: block; margin-bottom: 0.4rem;
+    background: linear-gradient(135deg, var(--polly-primary), var(--polly-secondary));
+    color: #fff; width: 56px; height: 56px; border-radius: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.4rem; margin: 0 auto;
+}
+.auth-logo .logo-text {
+    font-size: 1.6rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--polly-primary), var(--polly-secondary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.auth-logo .logo-tagline { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+.auth-card {
+    width: 100%; max-width: 420px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 16px; padding: 2rem;
+}
+.auth-card h2 { text-align: center; margin-bottom: 1.5rem; font-size: 1.3rem; }
+.auth-card form { display: flex; flex-direction: column; gap: 0.75rem; }
+.auth-card input {
+    width: 100%; padding: 0.7rem 1rem; background: var(--bg-dark);
+    border: 1px solid var(--border); border-radius: 8px; color: white;
+    font-size: 0.95rem; outline: none;
+}
+.auth-card input:focus { border-color: var(--polly-primary); }
+.auth-card input::placeholder { color: var(--text-muted); }
+.auth-card button[type=submit] {
+    width: 100%; margin-top: 0.5rem; padding: 0.7rem;
+    background: var(--polly-primary); color: white; border: none;
+    border-radius: 8px; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+}
+.auth-card button[type=submit]:hover { background: #5558e6; }
+.auth-card .alt-link {
+    text-align: center; margin-top: 1rem; font-size: 0.85em; color: var(--text-secondary);
+}
+.auth-card .alt-link a { color: var(--polly-primary); }
+.auth-card .error-msg {
+    color: #e06c75; font-size: 0.85em; text-align: center;
+    background: rgba(224,108,117,0.1); padding: 0.5rem; border-radius: 6px;
+}
+.auth-card .success-msg {
+    color: #2ea043; font-size: 0.85em; text-align: center;
+    background: rgba(46,160,67,0.1); padding: 0.5rem; border-radius: 6px;
+}
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 2.5rem; }
+.pw-toggle {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    padding: 0.25rem; width: 28px; height: 28px;
+}
+.pw-toggle svg { width: 18px; height: 18px; }
+.auth-footer {
+    text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-muted);
+}
 """
 
 
-def Navbar(active=""):
+def Navbar(active="", user=None):
+    links = [
+        A("Home", href="/", cls="active" if active == "home" else ""),
+        A("About", href="/about", cls="active" if active == "about" else ""),
+        A("Demo", href="/demo", cls="active" if active == "demo" else ""),
+        A("Chat", href="/chat", cls="active" if active == "chat" else ""),
+    ]
+    if user:
+        links.append(Span(user.get("display_name", ""), cls="nav-user"))
+        links.append(A("Logout", href="/logout"))
+    else:
+        links.append(A("Login", href="/signin"))
     return Nav(
         Span("POLLY", cls="logo"),
-        Div(
-            A("Home", href="/", cls="active" if active == "home" else ""),
-            A("About", href="/about", cls="active" if active == "about" else ""),
-            A("Demo", href="/demo", cls="active" if active == "demo" else ""),
-            cls="nav-links",
-        ),
+        Div(*links, cls="nav-links"),
         cls="top-nav",
     )
 
@@ -1387,4 +1474,427 @@ def _scenario_card(key, s):
 # Run
 # ---------------------------------------------------------------------------
 
-serve(host="0.0.0.0", port=int(os.environ.get("PORT", 5001)))
+# ---------------------------------------------------------------------------
+# Auth helpers
+# ---------------------------------------------------------------------------
+
+_EYE_OPEN = '<svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+_EYE_CLOSED = '<svg class="eye-closed" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+
+PW_TOGGLE_JS = """
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.pw-toggle')) {
+        var wrap = e.target.closest('.pw-wrap');
+        var inp = wrap.querySelector('input');
+        var open = wrap.querySelector('.eye-open');
+        var closed = wrap.querySelector('.eye-closed');
+        if (inp.type === 'password') {
+            inp.type = 'text'; open.style.display='none'; closed.style.display='block';
+        } else {
+            inp.type = 'password'; open.style.display='block'; closed.style.display='none';
+        }
+    }
+});
+"""
+
+
+def _auth_layout(title: str, card_parts: list):
+    return Html(
+        Head(
+            Title(f"{title} — POLLY"),
+            Style(BRAND_CSS + NAV_CSS + AUTH_CSS),
+        ),
+        Body(
+            Navbar(),
+            Div(
+                Div(
+                    Span("P", cls="logo-icon"),
+                    Div("POLLY", cls="logo-text"),
+                    Div("AI Marketing for Financial Advisors", cls="logo-tagline"),
+                    cls="auth-logo",
+                ),
+                Div(*card_parts, cls="auth-card"),
+                Div("© 2025-2026 POLLY. All rights reserved.", cls="auth-footer"),
+                cls="auth-wrapper",
+            ),
+            Script(PW_TOGGLE_JS),
+        ),
+    )
+
+
+def _pw_input(name="password", placeholder="Password", **kwargs):
+    return Div(
+        Input(type="password", name=name, placeholder=placeholder, required=True, **kwargs),
+        Button(NotStr(_EYE_OPEN + _EYE_CLOSED), type="button", cls="pw-toggle"),
+        cls="pw-wrap",
+    )
+
+
+def _session_login(session, user: Dict):
+    display = user.get("full_name") or user.get("display_name") or ""
+    if not display.strip():
+        display = user.get("email", "user").split("@")[0]
+    session["user"] = {
+        "user_id": str(user.get("id", "")),
+        "email": user["email"],
+        "display_name": display,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Auth routes
+# ---------------------------------------------------------------------------
+
+@rt("/register")
+def register(session, email: str = "", password: str = "", display_name: str = "", error: str = ""):
+    if email and password:
+        if len(password) < 8:
+            return RedirectResponse("/register?error=Password+must+be+at+least+8+characters", status_code=303)
+        from utils.auth import create_user, get_user_by_email
+        existing = get_user_by_email(email)
+        if existing:
+            return RedirectResponse("/signin?error=Account+already+exists.+Please+login.", status_code=303)
+        user = create_user(email=email, password=password, display_name=display_name or None)
+        if not user:
+            return RedirectResponse("/register?error=Unable+to+create+account", status_code=303)
+        _session_login(session, user)
+        return RedirectResponse("/chat", status_code=303)
+
+    if session.get("user"):
+        return RedirectResponse("/chat")
+    parts = [H2("Create Account")]
+    if error:
+        parts.append(P(error, cls="error-msg"))
+    parts.append(
+        Form(
+            Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
+            _pw_input("password", "Password (min 8 characters)", minlength="8"),
+            Input(type="text", name="display_name", placeholder="Display name (optional)"),
+            Button("Create Account", type="submit"),
+            method="post", action="/register",
+        )
+    )
+    parts.append(Div("Already have an account? ", A("Login", href="/signin"), cls="alt-link"))
+    return _auth_layout("Register", parts)
+
+
+@rt("/signin")
+def signin(session, email: str = "", password: str = "", error: str = "", msg: str = ""):
+    if email and password:
+        from utils.auth import authenticate
+        user = authenticate(email, password)
+        if not user:
+            return RedirectResponse("/signin?error=Invalid+email+or+password", status_code=303)
+        _session_login(session, user)
+        return RedirectResponse("/chat", status_code=303)
+
+    if session.get("user"):
+        return RedirectResponse("/chat")
+    parts = [H2("Login")]
+    if msg:
+        parts.append(P(msg, cls="success-msg"))
+    if error:
+        parts.append(P(error, cls="error-msg"))
+    parts.append(
+        Form(
+            Input(type="email", name="email", placeholder="Email", required=True, autofocus=True),
+            _pw_input("password", "Password"),
+            Button("Login", type="submit"),
+            method="post", action="/signin",
+        )
+    )
+    parts.append(Div("Don't have an account? ", A("Sign up", href="/register"), cls="alt-link"))
+    return _auth_layout("Login", parts)
+
+
+@rt("/logout")
+def logout(session):
+    session.pop("user", None)
+    return RedirectResponse("/")
+
+
+# ---------------------------------------------------------------------------
+# Chat page (requires login)
+# ---------------------------------------------------------------------------
+
+CHAT_CSS = """
+body { overflow: hidden; }
+
+.chat-container {
+    display: flex;
+    height: calc(100vh - 57px);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-dark);
+}
+
+.chat-header-bar {
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.chat-header-bar .chat-avatar {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--polly-primary), var(--polly-secondary));
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 1.1rem; color: white;
+}
+.chat-header-bar .chat-name { font-weight: 600; font-size: 1rem; }
+.chat-header-bar .chat-status {
+    font-size: 0.75rem; color: var(--text-muted);
+    display: flex; align-items: center; gap: 0.25rem;
+}
+.chat-header-bar .online-dot {
+    width: 8px; height: 8px; background: #25d366;
+    border-radius: 50%; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.msg {
+    max-width: 75%;
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    animation: msgIn 0.3s ease;
+}
+@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.msg.bot {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+.msg.user {
+    background: var(--polly-primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.msg-time {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    text-align: right;
+}
+
+.typing-dots {
+    display: flex; gap: 0.25rem; padding: 0.75rem 1rem;
+    align-self: flex-start; background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px; border-bottom-left-radius: 4px;
+}
+.typing-dots span {
+    width: 8px; height: 8px; background: var(--text-muted);
+    border-radius: 50%; animation: dotBounce 1.4s infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:0.2s}
+.typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+
+.chat-input-bar {
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.chat-input-bar input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+}
+.chat-input-bar input:focus { border-color: var(--polly-primary); }
+.chat-input-bar input::placeholder { color: var(--text-muted); }
+.chat-input-bar button {
+    width: 44px; height: 44px;
+    background: var(--polly-primary);
+    border: none; border-radius: 50%; color: white;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.2s;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+}
+.chat-input-bar button:hover { transform: scale(1.1); }
+
+.quick-chips {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+}
+.quick-chip {
+    padding: 0.4rem 0.75rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.quick-chip:hover {
+    background: var(--polly-primary);
+    border-color: var(--polly-primary);
+    color: white;
+}
+"""
+
+CHAT_JS = """
+function addMsg(sender, text) {
+    var area = document.getElementById('chat-messages');
+    var div = document.createElement('div');
+    div.className = 'msg ' + sender;
+    var time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    div.innerHTML = text.replace(/\\n/g, '<br>') + '<div class="msg-time">' + time + '</div>';
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+    var area = document.getElementById('chat-messages');
+    var div = document.createElement('div');
+    div.className = 'typing-dots'; div.id = 'typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+}
+function hideTyping() { var t = document.getElementById('typing'); if(t) t.remove(); }
+
+function sendChat() {
+    var inp = document.getElementById('chat-input');
+    var text = inp.value.trim();
+    if (!text) return;
+    addMsg('user', text);
+    inp.value = '';
+    setTimeout(function() {
+        showTyping();
+        setTimeout(function() {
+            hideTyping();
+            var lower = text.toLowerCase();
+            if (lower.includes('campaign') || lower.includes('follow up') || lower.includes('launch')) {
+                addMsg('bot', "I can help with that campaign! Here's what I'll need:\\n\\n1. **Product** — which financial product?\\n2. **Audience** — target investor segment\\n3. **Channels** — email, WhatsApp, Telegram, LinkedIn?\\n4. **Timeline** — when to start?\\n\\nJust tell me the details and I'll draft a campaign brief with compliant copy.");
+            } else if (lower.includes('compliance') || lower.includes('review') || lower.includes('check')) {
+                addMsg('bot', "I'll review that for compliance. Send me the marketing content and I'll check it against:\\n\\n• MiFID II requirements\\n• FCA fair/clear/not misleading rules\\n• Required risk warnings\\n• Target market restrictions\\n\\nPaste the content and I'll flag any issues.");
+            } else if (lower.includes('teaser') || lower.includes('faq') || lower.includes('pitch')) {
+                addMsg('bot', "I can generate that for you! To create compliant marketing materials, I'll use your approved product documents.\\n\\nAvailable formats:\\n• **Teaser** — one-pager with risk warnings\\n• **FAQ** — from prospectus/term sheet\\n• **Pitch Deck** — slide-by-slide content\\n\\nWhich product should I create this for?");
+            } else if (lower.includes('analytics') || lower.includes('performance') || lower.includes('report')) {
+                addMsg('bot', "Here's your latest campaign snapshot:\\n\\n📊 **Last 7 days:**\\n• 3 campaigns active\\n• 1,247 contacts reached\\n• 234 responses (18.8%)\\n• 47 meetings booked\\n\\n📱 **Top channel:** WhatsApp (72% open rate)\\n⏰ **Best send time:** Tuesday 10 AM\\n\\nWant me to drill into a specific campaign?");
+            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+                addMsg('bot', "Hello! I'm POLLY, your AI marketing team for financial products. I can:\\n\\n• Create compliant campaigns across all channels\\n• Review content for MiFID II / FCA compliance\\n• Generate FAQs, teasers, and pitch decks\\n• Track responses and qualify leads\\n• Monitor WhatsApp, Telegram, email & social\\n\\nWhat would you like to work on?");
+            } else {
+                addMsg('bot', "I can help with that! Here's what I do best:\\n\\n🚀 **Campaigns** — create, A/B test, automate follow-ups\\n🛡️ **Compliance** — review content, risk warnings, MiFID checks\\n📝 **Content** — teasers, FAQs, pitch decks, email sequences\\n📊 **Analytics** — cross-channel performance reports\\n📱 **Channels** — WhatsApp, Telegram, email, LinkedIn, X\\n\\nJust tell me what you need!");
+            }
+        }, 1500);
+    }, 300);
+}
+
+function handleChatKey(e) { if (e.key === 'Enter') sendChat(); }
+
+function quickChat(text) {
+    document.getElementById('chat-input').value = text;
+    sendChat();
+}
+"""
+
+
+@rt("/chat")
+def chat(session):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    display = user.get("display_name", "there")
+    return Html(
+        Head(
+            Title("Chat with POLLY"),
+            Style(BRAND_CSS + NAV_CSS + CHAT_CSS),
+        ),
+        Body(
+            Navbar(active="chat", user=user),
+            Div(
+                Div(
+                    # Chat header
+                    Div(
+                        Div("P", cls="chat-avatar"),
+                        Div(
+                            Div("POLLY", cls="chat-name"),
+                            Div(Span(cls="online-dot"), " Online now", cls="chat-status"),
+                        ),
+                        cls="chat-header-bar",
+                    ),
+                    # Messages area
+                    Div(
+                        Div(
+                            NotStr(
+                                f"Hi {display}! I'm POLLY, your AI marketing team.<br><br>"
+                                "I can help you:<br>"
+                                "• Create compliant campaigns in minutes<br>"
+                                "• Review content for MiFID II / FCA compliance<br>"
+                                "• Generate FAQs, teasers, and pitch decks<br>"
+                                "• Track responses across all channels<br><br>"
+                                "What would you like to do today?"
+                            ),
+                            Div("Just now", cls="msg-time"),
+                            cls="msg bot",
+                        ),
+                        id="chat-messages", cls="chat-messages",
+                    ),
+                    # Quick chips
+                    Div(
+                        Span("Create a campaign", cls="quick-chip", onclick="quickChat('Create a new campaign')"),
+                        Span("Review compliance", cls="quick-chip", onclick="quickChat('Review my content for compliance')"),
+                        Span("Generate teaser", cls="quick-chip", onclick="quickChat('Generate a product teaser')"),
+                        Span("Show analytics", cls="quick-chip", onclick="quickChat('Show campaign analytics')"),
+                        cls="quick-chips",
+                    ),
+                    # Input bar
+                    Div(
+                        Input(type="text", id="chat-input", placeholder="Message POLLY...",
+                              onkeypress="handleChatKey(event)", autofocus=True),
+                        Button(
+                            NotStr('<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                                   '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
+                                   'd="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'),
+                            onclick="sendChat()",
+                        ),
+                        cls="chat-input-bar",
+                    ),
+                    cls="chat-main",
+                ),
+                cls="chat-container",
+            ),
+            Script(CHAT_JS),
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Run
+# ---------------------------------------------------------------------------
+
+serve(host="0.0.0.0", port=int(os.environ.get("PORT", 5055)))

@@ -28,6 +28,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS polly.users (
     id              SERIAL PRIMARY KEY,
     email           VARCHAR(255) UNIQUE NOT NULL,
+    password_hash   VARCHAR(255),
     full_name       VARCHAR(255) NOT NULL,
     persona         VARCHAR(50) NOT NULL DEFAULT 'campaign',  -- 'management', 'sales', 'campaign'
     company         VARCHAR(255),
