@@ -1,0 +1,10 @@
+.git
+.venv
+.env
+__pycache__
+*.pyc
+.pytest_cache
+.playwright-mcp
+.sesskey
+.polly_history
+test-results/report.html

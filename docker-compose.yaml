@@ -1,0 +1,22 @@
+services:
+  polly:
+    build: .
+    ports:
+      - "${PORT:-5001}:5001"
+    environment:
+      - PORT=5001
+      - XAI_API_KEY=${XAI_API_KEY}
+      - XAI_MODEL=${XAI_MODEL:-grok-3}
+      - ARCADE_API_KEY=${ARCADE_API_KEY:-}
+      - ARCADE_USER_EMAIL=${ARCADE_USER_EMAIL:-}
+      - ARCADE_USER_PASSWORD=${ARCADE_USER_PASSWORD:-}
+      - ARCADE_USER_ID=${ARCADE_USER_ID:-}
+      - COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-}
+      - DB_URL=${DB_URL:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

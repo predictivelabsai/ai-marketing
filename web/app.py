@@ -1,4 +1,6 @@
 """POLLY — FastHTML Web App for Financial Advisors."""
+import os
+
 from fasthtml.common import *
 
 app, rt = fast_app(
@@ -1385,4 +1387,4 @@ def _scenario_card(key, s):
 # Run
 # ---------------------------------------------------------------------------
 
-serve(port=5001)
+serve(host="0.0.0.0", port=int(os.environ.get("PORT", 5001)))
