@@ -75,7 +75,19 @@ All extend `IntegrationBackend` ABC with `is_configured() -> bool`. Initialized 
 
 ### Web UI (web/app.py)
 
-FastHTML app on port 5001 with three routes: `/` (home), `/about` (about page), `/demo` (interactive WhatsApp/Telegram simulator). Uses `fast_app(pico=False)` with custom CSS. No shared state with the CLI agents.
+FastHTML app on port 5055 with session-based auth (bcrypt passwords, `polly.users` table via `utils/auth.py` and `utils/db_pool.py`).
+
+**Routes:**
+- `/` — Landing page with feature cards
+- `/about` — About page with personas, document workflow, channels
+- `/demo` — Interactive WhatsApp/Telegram device simulator
+- `/chat` — Main chat interface (requires login). Vertical 3-zone layout: 6 starter skill buttons (shown initially) → scrollable message area → large textarea input at bottom. Starter buttons hide when first message is sent.
+- `/profile` — User profile with API integrations (status badges for XAI, Arcade, Playwright, Composio, WhatsApp, Telegram) and 39 marketing skills grid grouped by agent
+- `/signin`, `/register`, `/logout` — Authentication
+
+**Layout pattern (chat page):** Follows the alpatrade vertical 3-zone pattern — top nav, expanding middle content (starter grid or messages), fixed input bar at bottom. Uses `flex-direction: column` with `flex: 1` on the message area.
+
+**Auth flow:** `utils/auth.py` handles bcrypt hashing and `polly.users` queries. Session stored via FastHTML `secret_key` cookie. `DB_URL` env var for PostgreSQL connection via `utils/db_pool.py` singleton.
 
 ### TUI (tui/app.py)
 

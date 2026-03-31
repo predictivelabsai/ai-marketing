@@ -164,7 +164,7 @@ def Navbar(active="", user=None):
         A("Chat", href="/chat", cls="active" if active == "chat" else ""),
     ]
     if user:
-        links.append(Span(user.get("display_name", ""), cls="nav-user"))
+        links.append(A(user.get("display_name", "Profile"), href="/profile", cls="nav-user"))
         links.append(A("Logout", href="/logout"))
     else:
         links.append(A("Login", href="/signin"))
@@ -1618,66 +1618,83 @@ def logout(session):
 # ---------------------------------------------------------------------------
 
 CHAT_CSS = """
-body { overflow: hidden; }
-
-.chat-container {
-    display: flex;
+.chat-page {
     height: calc(100vh - 57px);
-    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    max-width: 820px;
     margin: 0 auto;
+    padding: 0 1rem;
 }
 
-.chat-main {
+/* Starter grid — shown before first message */
+.starter-section {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: var(--bg-dark);
-}
-
-.chat-header-bar {
-    padding: 1rem 1.5rem;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
-    display: flex;
+    justify-content: center;
     align-items: center;
+    padding: 2rem 0;
+}
+.starter-section.hidden { display: none; }
+.starter-greeting {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.starter-greeting h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.starter-greeting p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+.starter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
+    width: 100%;
+    max-width: 700px;
 }
-.chat-header-bar .chat-avatar {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, var(--polly-primary), var(--polly-secondary));
-    border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; font-weight: 700; font-size: 1.1rem; color: white;
+@media (max-width: 640px) { .starter-grid { grid-template-columns: repeat(2, 1fr); } }
+.starter-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
 }
-.chat-header-bar .chat-name { font-weight: 600; font-size: 1rem; }
-.chat-header-bar .chat-status {
-    font-size: 0.75rem; color: var(--text-muted);
-    display: flex; align-items: center; gap: 0.25rem;
+.starter-btn:hover {
+    border-color: var(--polly-primary);
+    background: rgba(99,102,241,0.08);
 }
-.chat-header-bar .online-dot {
-    width: 8px; height: 8px; background: #25d366;
-    border-radius: 50%; animation: pulse 2s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.starter-btn .s-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.starter-btn .s-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem; }
+.starter-btn .s-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
 
+/* Messages area */
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
-    display: flex;
+    padding: 1.5rem 0;
+    display: none;
     flex-direction: column;
     gap: 0.75rem;
 }
+.chat-messages.active { display: flex; }
 
 .msg {
-    max-width: 75%;
-    padding: 0.75rem 1rem;
-    border-radius: 16px;
+    max-width: 80%;
+    padding: 0.875rem 1.25rem;
+    border-radius: 18px;
     font-size: 0.9375rem;
-    line-height: 1.5;
+    line-height: 1.6;
     animation: msgIn 0.3s ease;
 }
 @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
 .msg.bot {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1698,10 +1715,10 @@ body { overflow: hidden; }
 }
 
 .typing-dots {
-    display: flex; gap: 0.25rem; padding: 0.75rem 1rem;
+    display: flex; gap: 0.25rem; padding: 0.875rem 1.25rem;
     align-self: flex-start; background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 16px; border-bottom-left-radius: 4px;
+    border-radius: 18px; border-bottom-left-radius: 4px;
 }
 .typing-dots span {
     width: 8px; height: 8px; background: var(--text-muted);
@@ -1711,61 +1728,133 @@ body { overflow: hidden; }
 .typing-dots span:nth-child(3){animation-delay:0.4s}
 @keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
 
+/* Input bar — centered, larger */
 .chat-input-bar {
-    padding: 1rem 1.5rem;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border);
+    padding: 1.25rem 0;
     display: flex;
     gap: 0.75rem;
     align-items: center;
 }
-.chat-input-bar input {
+.chat-input-bar textarea {
     flex: 1;
-    padding: 0.75rem 1rem;
-    background: var(--bg-dark);
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 24px;
+    border-radius: 16px;
     color: white;
-    font-size: 1rem;
+    font-size: 1.05rem;
+    font-family: inherit;
     outline: none;
+    resize: none;
+    min-height: 56px;
+    max-height: 150px;
+    line-height: 1.5;
 }
-.chat-input-bar input:focus { border-color: var(--polly-primary); }
-.chat-input-bar input::placeholder { color: var(--text-muted); }
+.chat-input-bar textarea:focus { border-color: var(--polly-primary); }
+.chat-input-bar textarea::placeholder { color: var(--text-muted); }
 .chat-input-bar button {
-    width: 44px; height: 44px;
+    width: 52px; height: 52px;
     background: var(--polly-primary);
     border: none; border-radius: 50%; color: white;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: transform 0.2s;
-    box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+    box-shadow: 0 2px 12px rgba(99,102,241,0.4);
+    flex-shrink: 0;
 }
-.chat-input-bar button:hover { transform: scale(1.1); }
+.chat-input-bar button:hover { transform: scale(1.08); }
 
-.quick-chips {
-    display: flex; gap: 0.5rem; flex-wrap: wrap;
-    padding: 0.75rem 1.5rem;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border);
+/* Profile page */
+.profile-page {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 2rem 4rem;
 }
-.quick-chip {
-    padding: 0.4rem 0.75rem;
-    background: var(--bg-dark);
+.profile-page h1 { font-size: 1.75rem; margin-bottom: 2rem; }
+.profile-section {
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
-.quick-chip:hover {
-    background: var(--polly-primary);
-    border-color: var(--polly-primary);
-    color: white;
+.profile-section h3 {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
+.profile-info { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; font-size: 0.9375rem; }
+.profile-info dt { color: var(--text-muted); }
+.profile-info dd { color: white; }
+
+/* Integration cards */
+.int-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+.int-card {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.int-icon { font-size: 1.5rem; flex-shrink: 0; }
+.int-info { flex: 1; }
+.int-name { font-weight: 600; font-size: 0.9375rem; }
+.int-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+.int-status {
+    font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: 6px; font-weight: 500; white-space: nowrap;
+}
+.int-status.configured { color: #2ea043; background: rgba(46,160,67,0.1); }
+.int-status.not-configured { color: var(--text-muted); background: rgba(100,116,139,0.1); }
+.int-form {
+    display: flex; gap: 0.5rem; margin-top: 0.75rem;
+}
+.int-form input {
+    flex: 1; padding: 0.5rem 0.75rem; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: white; font-size: 0.85rem; outline: none;
+}
+.int-form input::placeholder { color: var(--text-muted); }
+.int-form button {
+    padding: 0.5rem 1rem; background: var(--polly-primary);
+    border: none; border-radius: 8px; color: white;
+    font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+}
+
+/* Skills grid */
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+}
+.skill-card {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+}
+.skill-card .sk-agent {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--polly-secondary); margin-bottom: 0.25rem;
+}
+.skill-card .sk-name { font-weight: 600; font-size: 0.875rem; }
+.skill-card .sk-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.4; }
 """
 
 CHAT_JS = """
+var started = false;
+function startChat() {
+    if (!started) {
+        started = true;
+        document.getElementById('starter').classList.add('hidden');
+        document.getElementById('chat-messages').classList.add('active');
+    }
+}
+
 function addMsg(sender, text) {
+    startChat();
     var area = document.getElementById('chat-messages');
     var div = document.createElement('div');
     div.className = 'msg ' + sender;
@@ -1776,6 +1865,7 @@ function addMsg(sender, text) {
 }
 
 function showTyping() {
+    startChat();
     var area = document.getElementById('chat-messages');
     var div = document.createElement('div');
     div.className = 'typing-dots'; div.id = 'typing';
@@ -1791,6 +1881,7 @@ function sendChat() {
     if (!text) return;
     addMsg('user', text);
     inp.value = '';
+    inp.style.height = 'auto';
     setTimeout(function() {
         showTyping();
         setTimeout(function() {
@@ -1800,25 +1891,37 @@ function sendChat() {
                 addMsg('bot', "I can help with that campaign! Here's what I'll need:\\n\\n1. **Product** — which financial product?\\n2. **Audience** — target investor segment\\n3. **Channels** — email, WhatsApp, Telegram, LinkedIn?\\n4. **Timeline** — when to start?\\n\\nJust tell me the details and I'll draft a campaign brief with compliant copy.");
             } else if (lower.includes('compliance') || lower.includes('review') || lower.includes('check')) {
                 addMsg('bot', "I'll review that for compliance. Send me the marketing content and I'll check it against:\\n\\n• MiFID II requirements\\n• FCA fair/clear/not misleading rules\\n• Required risk warnings\\n• Target market restrictions\\n\\nPaste the content and I'll flag any issues.");
-            } else if (lower.includes('teaser') || lower.includes('faq') || lower.includes('pitch')) {
-                addMsg('bot', "I can generate that for you! To create compliant marketing materials, I'll use your approved product documents.\\n\\nAvailable formats:\\n• **Teaser** — one-pager with risk warnings\\n• **FAQ** — from prospectus/term sheet\\n• **Pitch Deck** — slide-by-slide content\\n\\nWhich product should I create this for?");
-            } else if (lower.includes('analytics') || lower.includes('performance') || lower.includes('report')) {
+            } else if (lower.includes('teaser') || lower.includes('faq') || lower.includes('pitch') || lower.includes('content')) {
+                addMsg('bot', "I can generate that for you! To create compliant marketing materials, I'll use your approved product documents.\\n\\nAvailable formats:\\n• **Teaser** — one-pager with risk warnings\\n• **FAQ** — from prospectus/term sheet\\n• **Pitch Deck** — slide-by-slide content\\n• **Email Sequence** — nurture or launch series\\n\\nWhich product should I create this for?");
+            } else if (lower.includes('analytics') || lower.includes('performance') || lower.includes('report') || lower.includes('channel')) {
                 addMsg('bot', "Here's your latest campaign snapshot:\\n\\n📊 **Last 7 days:**\\n• 3 campaigns active\\n• 1,247 contacts reached\\n• 234 responses (18.8%)\\n• 47 meetings booked\\n\\n📱 **Top channel:** WhatsApp (72% open rate)\\n⏰ **Best send time:** Tuesday 10 AM\\n\\nWant me to drill into a specific campaign?");
-            } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-                addMsg('bot', "Hello! I'm POLLY, your AI marketing team for financial products. I can:\\n\\n• Create compliant campaigns across all channels\\n• Review content for MiFID II / FCA compliance\\n• Generate FAQs, teasers, and pitch decks\\n• Track responses and qualify leads\\n• Monitor WhatsApp, Telegram, email & social\\n\\nWhat would you like to work on?");
+            } else if (lower.includes('seo') || lower.includes('audit') || lower.includes('search')) {
+                addMsg('bot', "I can help with SEO! Here's what I offer:\\n\\n🔍 **Technical Audit** — meta tags, headings, schema markup\\n🤖 **AI SEO** — optimize for AI search engines (AEO/LLMO)\\n📊 **Competitor Analysis** — compare your SEO vs competitors\\n🏗️ **Schema Markup** — generate JSON-LD structured data\\n\\nShare a URL or tell me what you need.");
+            } else if (lower.includes('lead') || lower.includes('contact') || lower.includes('crm')) {
+                addMsg('bot', "Lead management is key! I can help with:\\n\\n🎯 **Lead Scoring** — prioritize by engagement level\\n📋 **Lead Categorization** — hot, warm, questions, removal\\n🔄 **Automated Follow-up** — for non-responders\\n📤 **Sales Handoff** — qualified leads to your team\\n\\nWhich campaign's leads should we look at?");
             } else {
-                addMsg('bot', "I can help with that! Here's what I do best:\\n\\n🚀 **Campaigns** — create, A/B test, automate follow-ups\\n🛡️ **Compliance** — review content, risk warnings, MiFID checks\\n📝 **Content** — teasers, FAQs, pitch decks, email sequences\\n📊 **Analytics** — cross-channel performance reports\\n📱 **Channels** — WhatsApp, Telegram, email, LinkedIn, X\\n\\nJust tell me what you need!");
+                addMsg('bot', "I can help with that! Here's what I do best:\\n\\n🚀 **Campaigns** — create, A/B test, automate follow-ups\\n🛡️ **Compliance** — review content, risk warnings, MiFID checks\\n📝 **Content** — teasers, FAQs, pitch decks, email sequences\\n📊 **Analytics** — cross-channel performance reports\\n📱 **Channels** — WhatsApp, Telegram, email, LinkedIn, X\\n🔍 **SEO** — audits, schema markup, AI search optimization\\n\\nJust tell me what you need!");
             }
         }, 1500);
     }, 300);
 }
 
-function handleChatKey(e) { if (e.key === 'Enter') sendChat(); }
+function handleChatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
 
 function quickChat(text) {
     document.getElementById('chat-input').value = text;
     sendChat();
 }
+
+// Auto-resize textarea
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'chat-input') {
+        e.target.style.height = 'auto';
+        e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+    }
+});
 """
 
 
@@ -1837,59 +1940,211 @@ def chat(session):
         Body(
             Navbar(active="chat", user=user),
             Div(
+                # Starter section — 6 buttons, centered
                 Div(
-                    # Chat header
                     Div(
-                        Div("P", cls="chat-avatar"),
-                        Div(
-                            Div("POLLY", cls="chat-name"),
-                            Div(Span(cls="online-dot"), " Online now", cls="chat-status"),
-                        ),
-                        cls="chat-header-bar",
+                        H1(f"Hi {display}, how can I help?"),
+                        P("Choose a skill below or type anything to get started."),
+                        cls="starter-greeting",
                     ),
-                    # Messages area
                     Div(
-                        Div(
-                            NotStr(
-                                f"Hi {display}! I'm POLLY, your AI marketing team.<br><br>"
-                                "I can help you:<br>"
-                                "• Create compliant campaigns in minutes<br>"
-                                "• Review content for MiFID II / FCA compliance<br>"
-                                "• Generate FAQs, teasers, and pitch decks<br>"
-                                "• Track responses across all channels<br><br>"
-                                "What would you like to do today?"
-                            ),
-                            Div("Just now", cls="msg-time"),
-                            cls="msg bot",
-                        ),
-                        id="chat-messages", cls="chat-messages",
+                        _starter_btn("🚀", "Launch Campaign",
+                                     "Plan and execute a multi-channel campaign",
+                                     "Create a campaign for my latest financial product"),
+                        _starter_btn("🛡️", "Compliance Review",
+                                     "Check content against MiFID II / FCA rules",
+                                     "Review my marketing content for compliance"),
+                        _starter_btn("📝", "Create Content",
+                                     "Generate teasers, FAQs, pitch decks",
+                                     "Generate a product teaser for my fund"),
+                        _starter_btn("📊", "Campaign Analytics",
+                                     "Cross-channel performance reports",
+                                     "Show me campaign analytics for this week"),
+                        _starter_btn("🔍", "SEO & Research",
+                                     "Audits, competitor analysis, market research",
+                                     "Run an SEO audit on my website"),
+                        _starter_btn("📱", "Channel Monitor",
+                                     "Track WhatsApp, email, Telegram responses",
+                                     "Show me lead activity across channels"),
+                        cls="starter-grid",
                     ),
-                    # Quick chips
-                    Div(
-                        Span("Create a campaign", cls="quick-chip", onclick="quickChat('Create a new campaign')"),
-                        Span("Review compliance", cls="quick-chip", onclick="quickChat('Review my content for compliance')"),
-                        Span("Generate teaser", cls="quick-chip", onclick="quickChat('Generate a product teaser')"),
-                        Span("Show analytics", cls="quick-chip", onclick="quickChat('Show campaign analytics')"),
-                        cls="quick-chips",
-                    ),
-                    # Input bar
-                    Div(
-                        Input(type="text", id="chat-input", placeholder="Message POLLY...",
-                              onkeypress="handleChatKey(event)", autofocus=True),
-                        Button(
-                            NotStr('<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
-                                   '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
-                                   'd="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'),
-                            onclick="sendChat()",
-                        ),
-                        cls="chat-input-bar",
-                    ),
-                    cls="chat-main",
+                    id="starter", cls="starter-section",
                 ),
-                cls="chat-container",
+                # Messages area — hidden until first message
+                Div(id="chat-messages", cls="chat-messages"),
+                # Input bar — centered, larger textarea
+                Div(
+                    NotStr('<textarea id="chat-input" placeholder="Message POLLY... (Enter to send, Shift+Enter for new line)" '
+                           'onkeydown="handleChatKey(event)" rows="1"></textarea>'),
+                    Button(
+                        NotStr('<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                               '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
+                               'd="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'),
+                        onclick="sendChat()",
+                    ),
+                    cls="chat-input-bar",
+                ),
+                cls="chat-page",
             ),
             Script(CHAT_JS),
         ),
+    )
+
+
+def _starter_btn(icon, title, desc, prompt):
+    return Div(
+        Div(icon, cls="s-icon"),
+        Div(title, cls="s-title"),
+        Div(desc, cls="s-desc"),
+        cls="starter-btn",
+        onclick=f"quickChat('{prompt}')",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Profile page (requires login)
+# ---------------------------------------------------------------------------
+
+SKILLS_DATA = [
+    ("content", "copywriting", "Generate marketing copy for any format"),
+    ("content", "copy-editing", "Review and improve existing copy"),
+    ("content", "social-content", "Platform-optimized social posts"),
+    ("content", "email-sequence", "Multi-step email drip sequences"),
+    ("content", "faq", "Generate FAQ from product docs"),
+    ("content", "teaser", "Create compliant product teaser"),
+    ("content", "pitch-deck", "Generate pitch deck content"),
+    ("strategy", "launch", "Financial product launch planning"),
+    ("strategy", "market-research", "Market conditions and investor appetite"),
+    ("strategy", "competitor-matrix", "Competitor analysis matrix"),
+    ("strategy", "backtesting", "Historical performance analysis"),
+    ("strategy", "ideas", "Generate marketing ideas"),
+    ("strategy", "product-context", "Set shared product context"),
+    ("compliance", "review", "Review content for regulatory compliance"),
+    ("compliance", "submit", "Submit document for approval"),
+    ("compliance", "approve", "Approve document (management)"),
+    ("compliance", "target-market", "Define MiFID target market"),
+    ("compliance", "risk-warnings", "Generate risk warnings"),
+    ("campaign", "create", "Create a marketing campaign"),
+    ("campaign", "warmup", "Market-testing warmup campaign"),
+    ("campaign", "workflow", "Design campaign automation"),
+    ("campaign", "monitor", "Campaign performance analytics"),
+    ("campaign", "follow-up", "Follow-up for non-responders"),
+    ("campaign", "ab-test", "Design A/B tests"),
+    ("campaign", "leads", "Analyze and prioritize leads"),
+    ("channels", "report", "Cross-channel analytics report"),
+    ("channels", "whatsapp", "WhatsApp monitoring"),
+    ("channels", "telegram", "Telegram monitoring"),
+    ("channels", "email", "Email channel analytics"),
+    ("channels", "crm", "CRM pipeline analytics"),
+    ("social", "post", "Post to X/LinkedIn/WhatsApp/Telegram"),
+    ("cro", "page-cro", "Conversion rate optimization audit"),
+    ("cro", "signup-flow", "Audit signup flow"),
+    ("seo", "audit", "Technical SEO audit"),
+    ("seo", "ai-seo", "Optimize for AI search engines"),
+    ("seo", "schema-markup", "Generate JSON-LD structured data"),
+    ("ads", "paid-ads", "Campaign strategy for ad platforms"),
+    ("ads", "ab-test", "Design A/B experiments"),
+    ("ads", "analytics-tracking", "GA4 events and UTM setup"),
+]
+
+INTEGRATIONS_DATA = [
+    ("🤖", "XAI / Grok", "AI content generation for all agents", "XAI_API_KEY",
+     "Powers copywriting, compliance review, campaign planning, and all content generation"),
+    ("📱", "Arcade.dev", "Social media posting (X, LinkedIn)", "ARCADE_API_KEY",
+     "Post directly to X/Twitter and LinkedIn from POLLY"),
+    ("🔍", "Playwright", "Page analysis for CRO and SEO audits", None,
+     "Headless browser for analyzing web pages — no API key needed"),
+    ("🔗", "Composio", "CRM, GA4, Mailchimp, Buffer, Semrush", "COMPOSIO_API_KEY",
+     "Connect to third-party marketing and analytics platforms"),
+    ("📧", "Email (SMTP)", "Send campaign emails and notifications", "SMTP_HOST",
+     "Direct email sending for campaigns and follow-ups"),
+    ("💬", "WhatsApp Business", "WhatsApp messaging and monitoring", "WHATSAPP_API_KEY",
+     "Send and receive WhatsApp messages for campaigns"),
+    ("✈️", "Telegram Bot", "Telegram messaging and monitoring", "TELEGRAM_BOT_TOKEN",
+     "Send and receive Telegram messages for campaigns"),
+]
+
+
+@rt("/profile")
+def profile(session, msg: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    return Html(
+        Head(
+            Title("Profile — POLLY"),
+            Style(BRAND_CSS + NAV_CSS + CHAT_CSS),
+        ),
+        Body(
+            Navbar(active="profile", user=user),
+            Div(
+                H1("Profile & Integrations"),
+
+                # User info
+                Div(
+                    H3("👤 Account"),
+                    Dl(
+                        Dt("Email"), Dd(user.get("email", "")),
+                        Dt("Name"), Dd(user.get("display_name", "")),
+                        cls="profile-info",
+                    ),
+                    cls="profile-section",
+                ),
+
+                # Integrations
+                Div(
+                    H3("🔌 API Integrations"),
+                    P("Connect your API keys to unlock POLLY's full capabilities. Keys are stored encrypted.",
+                      style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;"),
+                    Div(
+                        *[_integration_card(*i) for i in INTEGRATIONS_DATA],
+                        cls="int-grid",
+                    ),
+                    cls="profile-section",
+                ),
+
+                # Marketing Skills
+                Div(
+                    H3("⚡ Marketing Skills"),
+                    P(f"{len(SKILLS_DATA)} skills across 9 agents — all available from the chat.",
+                      style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;"),
+                    Div(
+                        *[_skill_card(agent, name, desc) for agent, name, desc in SKILLS_DATA],
+                        cls="skills-grid",
+                    ),
+                    cls="profile-section",
+                ),
+
+                cls="profile-page",
+            ),
+        ),
+    )
+
+
+def _integration_card(icon, name, desc, env_var, detail):
+    configured = bool(os.environ.get(env_var, "")) if env_var else True
+    status_cls = "configured" if configured else "not-configured"
+    status_text = "Connected" if configured else "Not configured"
+
+    return Div(
+        Div(icon, cls="int-icon"),
+        Div(
+            Div(name, cls="int-name"),
+            Div(desc, cls="int-desc"),
+            cls="int-info",
+        ),
+        Span(status_text, cls=f"int-status {status_cls}"),
+        cls="int-card",
+    )
+
+
+def _skill_card(agent, name, desc):
+    return Div(
+        Div(agent, cls="sk-agent"),
+        Div(name, cls="sk-name"),
+        Div(desc, cls="sk-desc"),
+        cls="skill-card",
     )
 
 
