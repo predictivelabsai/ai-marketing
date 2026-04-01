@@ -128,6 +128,23 @@ python docs/generate_pptx.py
 
 To regenerate after changes: update screenshots first (see User Guide Generation above), then run the script.
 
+## RAG Document Pipeline
+
+```bash
+# Process all documents in doc-data/ into vector embeddings
+python tasks/create_rag.py
+
+# Query the document knowledge base (single question)
+python tests/query_docs.py -q "What is the XTCC Solar product?"
+
+# Run full RAG evaluation (8 test queries, writes test-results/rag_evaluation.json)
+python tests/query_docs.py
+```
+
+Schema: `polly_rag` (separate from main `polly` schema). Tables: `documents`, `chunks` (pgvector 384d), `query_log`.
+Embedding model: `BAAI/bge-small-en-v1.5` (local via fastembed, no API key needed).
+Text extraction: `pymupdf4llm` (PDF), `python-pptx` (PPTX), `python-docx` (DOCX).
+
 ## Prompt Management
 
 System prompts are stored in `polly.prompts` table. `PromptService` (`utils/prompt_service.py`) resolves prompts with chain: user override → global DB default → hardcoded fallback. Template var `{{today}}` is replaced at resolve time. The `/instructions` route provides a per-agent editor with admin-only global prompt editing.

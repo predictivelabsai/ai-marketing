@@ -1,0 +1,291 @@
+{
+  "timestamp": "2026-04-01T09:30:17Z",
+  "test_group": "rag_evaluation",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "llm_model": "grok-3-fast",
+  "total_documents": 7,
+  "total_chunks": 934,
+  "total_questions": 8,
+  "passed": 8,
+  "failed": 0,
+  "overall_accuracy": 0.958,
+  "mean_retrieval_similarity": 0.8177,
+  "tests": [
+    {
+      "question": "What is the XTCC Solar structured product?",
+      "category": "product_overview",
+      "answer": "The XTCC Solar structured product is a USD-denominated, 4-year, 100% principal-protected carbon credit investment product issued by Sustainable Capital PLC as Series 2023-F6 Notes due 2027. It provides indirect exposure to High-Integrity Carbon Credits (HICC) sourced exclusively from verified and audited solar energy projects. The issue size is USD 50,000,000, and the ISIN is CH1213603926. (Source: XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf, chunk 0)",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "solar",
+        "carbon",
+        "structured",
+        "capital"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.8103,
+      "top_sources": [
+        {
+          "filename": "XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf",
+          "chunk_index": 0,
+          "similarity": 0.8103,
+          "snippet": "YA X TCC \n\n## **XTCC - USD Denominated 4 Year 100% Principal Protected Carbon Credit Structured Product - Solar** \n\nIssued by Sustainable Capital PLC,"
+        },
+        {
+          "filename": "XTCC OVERVIEW.pptx",
+          "chunk_index": 3,
+          "similarity": 0.7894,
+          "snippet": "A sustainable, green and ethical investment product for IFAs, wealth and fund managers.\nCircularity Benefits\nSnapshot\nXTCC\u2122 is a world\u2019s first multi-c"
+        },
+        {
+          "filename": "XTCC OVERVIEW.pptx",
+          "chunk_index": 11,
+          "similarity": 0.7772,
+          "snippet": "XTCC focuses on sourcing high-integrity credits from the Global South, emerging and developing economies including the Least Developed Economies where"
+        }
+      ],
+      "latency_ms": 2229,
+      "status": "passed"
+    },
+    {
+      "question": "What is the maturity or term of the XTCC Solar product?",
+      "category": "product_terms",
+      "answer": "The maturity or term of the XTCC Solar product is 4 years. (Source: XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf, chunk 0; XTCC GBP 4Yr Solar IM 100 PP .pdf, chunk 0; XTCC 4Y Principal Protected Detailed Overview and FAQ..docx, chunk 8; XTCC OVERVIEW.pptx, chunk 1)",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "4",
+        "year"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.8365,
+      "top_sources": [
+        {
+          "filename": "XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf",
+          "chunk_index": 0,
+          "similarity": 0.8365,
+          "snippet": "YA X TCC \n\n## **XTCC - USD Denominated 4 Year 100% Principal Protected Carbon Credit Structured Product - Solar** \n\nIssued by Sustainable Capital PLC,"
+        },
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 0,
+          "similarity": 0.7976,
+          "snippet": "## **XTCC** \u2122 **- SOLAR** \n\n**4-YEAR GBP INVESTMENT MEMORANDUM** November 2023 \n\n1 \n\n## **INVESTMENT MEMORANDUM** \n\n## **SUSTAINABLE CAPITAL PLC** \n\n("
+        },
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 8,
+          "similarity": 0.7887,
+          "snippet": "Past performance is no guarantee of future returns.\n\n# The XTCC 4-Year Principal Protected Investment\n\nXTCC\u2122 is the world\u2019s first investment product f"
+        }
+      ],
+      "latency_ms": 1481,
+      "status": "passed"
+    },
+    {
+      "question": "What currency denominations are the XTCC Solar notes available in?",
+      "category": "currency",
+      "answer": "The XTCC Solar notes are available in USD and GBP denominations. \n\n- For USD: XTCC 4Y Principal Protected USD Solar Notes and XTCC Solar Open-Ended Investment USD, as mentioned in \"XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf, chunk 9\" and \"XTCC_1pp_Flier_v7 (1).pdf, chunk 7.\"\n- For GBP: XTCC 4-Year GBP Solar Notes and XTCC Solar Open-Ended Investment GBP, as mentioned in \"XTCC GBP 4Yr Solar IM 100 PP .pdf, chunk 0\" and \"XTCC_1pp_Flier_v7 (1).pdf, chunk 7.\"",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "usd",
+        "gbp"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.8419,
+      "top_sources": [
+        {
+          "filename": "XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf",
+          "chunk_index": 9,
+          "similarity": 0.8419,
+          "snippet": "|Form of Notes|XTCC 4Y Principal Protected USD Solar Notes(**Notes**)|\n|---|---|\n|ISIN|CH1213603926|\n|Aggregate Nominal Amount|USD 50,000,000.|\n|Speci"
+        },
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 0,
+          "similarity": 0.8128,
+          "snippet": "## **XTCC** \u2122 **- SOLAR** \n\n**4-YEAR GBP INVESTMENT MEMORANDUM** November 2023 \n\n1 \n\n## **INVESTMENT MEMORANDUM** \n\n## **SUSTAINABLE CAPITAL PLC** \n\n("
+        },
+        {
+          "filename": "XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf",
+          "chunk_index": 0,
+          "similarity": 0.8076,
+          "snippet": "YA X TCC \n\n## **XTCC - USD Denominated 4 Year 100% Principal Protected Carbon Credit Structured Product - Solar** \n\nIssued by Sustainable Capital PLC,"
+        }
+      ],
+      "latency_ms": 1979,
+      "status": "passed"
+    },
+    {
+      "question": "What level of principal protection does the XTCC product offer?",
+      "category": "protection",
+      "answer": "The XTCC 4-Year Principal Protected Investment offers 100% principal protection at maturity. This means that at the end of the four-year term, investors are guaranteed to receive their initial investment amount back, regardless of the performance of the underlying assets. (Source: XTCC 4Y Principal Protected Detailed Overview and FAQ..docx, chunk 8; XTCC OVERVIEW.pptx, chunk 1)",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "principal",
+        "protect",
+        "100"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.8033,
+      "top_sources": [
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 8,
+          "similarity": 0.8033,
+          "snippet": "Past performance is no guarantee of future returns.\n\n# The XTCC 4-Year Principal Protected Investment\n\nXTCC\u2122 is the world\u2019s first investment product f"
+        },
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 0,
+          "similarity": 0.7928,
+          "snippet": "XTCC\u2122 4-YEAR 100% PRINCIPAL PROTECTED\n\nINVESTMENT\n\nVersion 1.1 | November 2023\n\nTable of Contents\n\nDISCLAIMER"
+        },
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 22,
+          "similarity": 0.7777,
+          "snippet": "## Do investors get yearly returns in XTCC 4-Year Principal Protected Investments?\n\nNo. XTCC is a performance-related product and pays out at maturity"
+        }
+      ],
+      "latency_ms": 1563,
+      "status": "passed"
+    },
+    {
+      "question": "Who is the issuer of the XTCC notes?",
+      "category": "issuer",
+      "answer": "The issuer of the XTCC Notes is Sustainable Capital PLC, a company incorporated with limited liability in England and Wales with registered number 12423459. [Source: XTCC GBP 4Yr Solar IM 100 PP .pdf, chunk 0]",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "sustainable",
+        "capital"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.7887,
+      "top_sources": [
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 70,
+          "similarity": 0.7887,
+          "snippet": "## **XTCC Notes represent the only way to credibly invest in the most important asset class of the netzero world.** \n\n## **Accountability, Transparenc"
+        },
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 67,
+          "similarity": 0.7803,
+          "snippet": "## \uf0b7 **Transparency** \n\nThe Issuer was established as a debt capital market issuance platform. The principles of a lookthrough approach and transparen"
+        },
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 40,
+          "similarity": 0.7739,
+          "snippet": "## **EXECUTIVE SUMMARY** \n\nThe XTCC Notes are intended to provide Noteholders 100% principal protection at the Maturity Date and participation in the "
+        }
+      ],
+      "latency_ms": 1930,
+      "status": "passed"
+    },
+    {
+      "question": "What are the key risks of investing in the XTCC Solar product?",
+      "category": "risks",
+      "answer": "I'm sorry, but the provided context does not specifically outline the key risks associated with investing in the XTCC Solar product. While the documents discuss the features, benefits, and structure of the XTCC Solar product, such as principal protection and exposure to high-integrity carbon credits, there is no detailed information on potential risks.\n\nIf you have access to additional sections of the documents or other related materials that might cover risk factors, I would be happy to assist further. Otherwise, I must state: Information not found in documents.",
+      "keyword_score": 0.667,
+      "keywords_found": [
+        "risk",
+        "credit"
+      ],
+      "keywords_missing": [
+        "market"
+      ],
+      "top_similarity": 0.7843,
+      "top_sources": [
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 8,
+          "similarity": 0.7843,
+          "snippet": "Past performance is no guarantee of future returns.\n\n# The XTCC 4-Year Principal Protected Investment\n\nXTCC\u2122 is the world\u2019s first investment product f"
+        },
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 97,
+          "similarity": 0.7664,
+          "snippet": "## **Technological Well-Being** \n\nThe successful sale of the HQCCs should encourage other entrepreneurs to participate in similar projects. Increased "
+        },
+        {
+          "filename": "V4_XTCC_Pitchdeck_Updated_03-07-2024.pptx",
+          "chunk_index": 6,
+          "similarity": 0.7585,
+          "snippet": "## Slide 7\n\nInvestor Choices\nXTCC |  Investor Deck 2024\nChoose your Carbon Credit\nChoose your Investment Product\nChoose your Currency\n01\n02\n03\n07\n\n## "
+        }
+      ],
+      "latency_ms": 1659,
+      "status": "passed"
+    },
+    {
+      "question": "What is the ISIN for the XTCC Solar notes?",
+      "category": "identifiers",
+      "answer": "The ISIN for the XTCC Solar Notes is CH1213603926. (Source: XTCC GBP 4Yr Solar IM 100 PP .pdf, chunk 0; XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf, chunk 9)",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "ch1213603926"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.8127,
+      "top_sources": [
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 0,
+          "similarity": 0.8127,
+          "snippet": "## **XTCC** \u2122 **- SOLAR** \n\n**4-YEAR GBP INVESTMENT MEMORANDUM** November 2023 \n\n1 \n\n## **INVESTMENT MEMORANDUM** \n\n## **SUSTAINABLE CAPITAL PLC** \n\n("
+        },
+        {
+          "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+          "chunk_index": 43,
+          "similarity": 0.8062,
+          "snippet": "8 \n\nThe Obligor will source HQCCs from audited and verified solar energy projects which have been operational since at least 2016 and meet relevant in"
+        },
+        {
+          "filename": "XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf",
+          "chunk_index": 9,
+          "similarity": 0.8033,
+          "snippet": "|Form of Notes|XTCC 4Y Principal Protected USD Solar Notes(**Notes**)|\n|---|---|\n|ISIN|CH1213603926|\n|Aggregate Nominal Amount|USD 50,000,000.|\n|Speci"
+        }
+      ],
+      "latency_ms": 944,
+      "status": "passed"
+    },
+    {
+      "question": "What are carbon credits and how do they relate to XTCC?",
+      "category": "underlying_asset",
+      "answer": "Carbon credits are units of measurement representing the removal or reduction of greenhouse gas emissions, typically equivalent to one metric ton of carbon dioxide or its equivalent. They are generated through projects that reduce or avoid emissions, such as renewable energy initiatives, and can be traded in carbon markets for offsetting emissions or as an investment asset.\n\nXTCC relates to carbon credits by being the world\u2019s first investment product ecosystem specifically focused on high-integrity carbon credits. XTCC creates stock market-quoted instruments that establish a fair market value for these credits, enhancing transparency and trust in the carbon market. XTCC invests in high-integrity carbon credits sourced from verified and audited projects, including solar, wind, hydropower, biogas, biomass, and biomethanation, which comply with CDM Protocols and meet industry standards like the 10 Core Carbon Principles defined by the Integrity Council for Voluntary Carbon Markets (ICVCM). By investing in the asset class rather than specific projects, XTCC eliminates project risk for investors. Additionally, XTCC products can be used for retirement offsets, investment, or hedging purposes, stimulating liquidity and encouraging more emission reduction projects to bridge the climate finance gap. (Sources: XTCC 4Y Principal Protected Detailed Overview and FAQ..docx, chunks 12, 24, 25; V4_XTCC_Pitchdeck_Updated_03-07-2024.pptx, chunk 1; XTCC OVERVIEW.pptx, chunk 4)",
+      "keyword_score": 1.0,
+      "keywords_found": [
+        "carbon",
+        "credit"
+      ],
+      "keywords_missing": [],
+      "top_similarity": 0.8636,
+      "top_sources": [
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 24,
+          "similarity": 0.8636,
+          "snippet": "## How does XTCC verify its sources of high-integrity carbon credits?\n\nXTCC sources high-integrity carbon credits that must meet the 10 Core Carbon Pr"
+        },
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 25,
+          "similarity": 0.8574,
+          "snippet": "## What type of projects does XTCC source their carbon credits from?\n\nXTCC only invests in high-integrity carbon credits sourced from projects includi"
+        },
+        {
+          "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+          "chunk_index": 12,
+          "similarity": 0.8559,
+          "snippet": "## High-Integrity Carbon Credits Performance\n\nXTCC invests in high-integrity carbon credits which are sourced from verified and audited projects that "
+        }
+      ],
+      "latency_ms": 5869,
+      "status": "passed"
+    }
+  ]
+}
