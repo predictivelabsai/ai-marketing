@@ -115,6 +115,18 @@ The `/guide` route serves them as `<img src="/static/guide/...">`.
 
 When the user says "regenerate guide" or "update screenshots", run `python tests/capture_guide.py`.
 
+## Demo Video Generation
+
+```bash
+# Capture frames and build MP4 + GIF (~33s, 22 frames)
+python tests/capture_video.py --start-app
+
+# Output: docs/demo_video.mp4 (1MB), docs/demo_video.gif (0.8MB), docs/frames/*.png
+```
+
+Walks through: home → about → login → chat (starters, campaign, compliance, analytics) → profile → instructions editor → demo (WhatsApp, Telegram, analytics, campaign preview) → home.
+When the user says "regenerate video" or "update demo", run `python tests/capture_video.py`.
+
 ## Slide Deck Generation
 
 ```bash
