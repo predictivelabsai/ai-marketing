@@ -1,0 +1,110 @@
+{
+  "base_url": "http://localhost:5055",
+  "screenshots": [
+    {
+      "name": "01_home",
+      "file": "01_home.png",
+      "description": "Home page \u2014 hero and feature cards",
+      "size_bytes": 108417
+    },
+    {
+      "name": "02_about_top",
+      "file": "02_about_top.png",
+      "description": "About page \u2014 hero and stats",
+      "size_bytes": 103574
+    },
+    {
+      "name": "03_about_bottom",
+      "file": "03_about_bottom.png",
+      "description": "About page \u2014 channels and CTA",
+      "size_bytes": 195383
+    },
+    {
+      "name": "04_demo",
+      "file": "04_demo.png",
+      "description": "Interactive demo \u2014 device simulator",
+      "size_bytes": 123818
+    },
+    {
+      "name": "05_register",
+      "file": "05_register.png",
+      "description": "Registration page",
+      "size_bytes": 40693
+    },
+    {
+      "name": "06_signin",
+      "file": "06_signin.png",
+      "description": "Login page",
+      "size_bytes": 31663
+    },
+    {
+      "name": "07_chat_starter",
+      "file": "07_chat_starter.png",
+      "description": "Chat page \u2014 6 starter skill buttons",
+      "size_bytes": 73280
+    },
+    {
+      "name": "08_chat_campaign",
+      "file": "08_chat_campaign.png",
+      "description": "Chat \u2014 campaign creation response",
+      "size_bytes": 58337
+    },
+    {
+      "name": "09_chat_analytics",
+      "file": "09_chat_analytics.png",
+      "description": "Chat \u2014 analytics response",
+      "size_bytes": 92126
+    },
+    {
+      "name": "10_profile_top",
+      "file": "10_profile_top.png",
+      "description": "Profile \u2014 account and integrations",
+      "size_bytes": 86307
+    },
+    {
+      "name": "11_profile_skills",
+      "file": "11_profile_skills.png",
+      "description": "Profile \u2014 marketing skills grid",
+      "size_bytes": 96981
+    },
+    {
+      "name": "12_instructions_top",
+      "file": "12_instructions_top.png",
+      "description": "Instructions Editor \u2014 global and content agent",
+      "size_bytes": 122095
+    },
+    {
+      "name": "13_instructions_bottom",
+      "file": "13_instructions_bottom.png",
+      "description": "Instructions Editor \u2014 SEO and Ads agents",
+      "size_bytes": 84461
+    },
+    {
+      "name": "14_demo_scenario",
+      "file": "14_demo_scenario.png",
+      "description": "Demo \u2014 campaign creation scenario",
+      "size_bytes": 137863
+    },
+    {
+      "name": "15_demo_telegram",
+      "file": "15_demo_telegram.png",
+      "description": "Demo \u2014 Telegram device simulator",
+      "size_bytes": 145441
+    },
+    {
+      "name": "16_demo_analytics",
+      "file": "16_demo_analytics.png",
+      "description": "Demo \u2014 live analytics dashboard",
+      "size_bytes": 127776
+    },
+    {
+      "name": "17_demo_campaign_preview",
+      "file": "17_demo_campaign_preview.png",
+      "description": "Demo \u2014 campaign A/B variant preview",
+      "size_bytes": 136719
+    }
+  ],
+  "errors": [],
+  "total": 17,
+  "timestamp": "2026-04-01T06:16:24Z"
+}

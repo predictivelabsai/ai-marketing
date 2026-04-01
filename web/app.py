@@ -2423,6 +2423,102 @@ def instructions_reload(session):
 
 
 # ---------------------------------------------------------------------------
+# User Guide (screenshots from static/guide/)
+# ---------------------------------------------------------------------------
+
+GUIDE_SCREENSHOTS = [
+    ("01_home.png", "Home page — hero and feature cards"),
+    ("02_about_top.png", "About page — hero and stats"),
+    ("03_about_bottom.png", "About page — channels and CTA"),
+    ("04_demo.png", "Interactive demo — device simulator"),
+    ("05_register.png", "Registration page"),
+    ("06_signin.png", "Login page"),
+    ("07_chat_starter.png", "Chat page — 6 starter skill buttons"),
+    ("08_chat_campaign.png", "Chat — campaign creation response"),
+    ("09_chat_analytics.png", "Chat — analytics response"),
+    ("10_profile_top.png", "Profile — account and integrations"),
+    ("11_profile_skills.png", "Profile — marketing skills grid"),
+    ("12_instructions_top.png", "Instructions Editor — global and content agent"),
+    ("13_instructions_bottom.png", "Instructions Editor — SEO and Ads agents"),
+    ("14_demo_scenario.png", "Demo — campaign creation scenario"),
+    ("15_demo_telegram.png", "Demo — Telegram device simulator"),
+    ("16_demo_analytics.png", "Demo — live analytics dashboard"),
+    ("17_demo_campaign_preview.png", "Demo — campaign A/B variant preview"),
+]
+
+GUIDE_CSS = """
+.guide-page {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 2rem 4rem;
+}
+.guide-page h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+.guide-page .subtitle { color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9375rem; }
+.screenshot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+@media (max-width: 768px) { .screenshot-grid { grid-template-columns: 1fr; } }
+.screenshot-grid figure {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0;
+}
+.screenshot-grid img {
+    width: 100%;
+    display: block;
+}
+.screenshot-grid figcaption {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+"""
+
+
+@rt("/guide")
+def guide(session):
+    user = session.get("user") if isinstance(session, dict) else None
+    static_dir = ROOT / "static" / "guide"
+    figures = []
+    for fname, caption in GUIDE_SCREENSHOTS:
+        if (static_dir / fname).exists():
+            figures.append(
+                Figure(
+                    Img(src=f"/static/guide/{fname}", alt=caption, loading="lazy"),
+                    Figcaption(caption),
+                )
+            )
+
+    if not figures:
+        content = P("No screenshots captured yet. Run: python tests/capture_guide.py",
+                     style="color: var(--text-muted); text-align: center; padding: 3rem;")
+    else:
+        content = Div(*figures, cls="screenshot-grid")
+
+    return Html(
+        Head(
+            Title("User Guide — POLLY"),
+            Style(BRAND_CSS + NAV_CSS + GUIDE_CSS),
+        ),
+        Body(
+            Navbar(active="guide", user=user),
+            Div(
+                H1("User Guide"),
+                P(f"{len(figures)} screenshots — regenerate with: python tests/capture_guide.py",
+                  cls="subtitle"),
+                content,
+                cls="guide-page",
+            ),
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 

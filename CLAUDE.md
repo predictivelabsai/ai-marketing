@@ -96,6 +96,29 @@ FastHTML app on port 5055 with session-based auth (bcrypt passwords, `polly.user
 - File-based history (`.polly_history`)
 - Builtins: `help`, `agents`, `context`, `history`, `clear`, `exit`
 
+## User Guide Generation
+
+The in-app User Guide (`/guide`) displays screenshots from `static/guide/`.
+To regenerate all screenshots after UI changes:
+
+```bash
+# Option 1: App already running
+python tests/capture_guide.py
+
+# Option 2: Auto-start app
+python tests/capture_guide.py --start-app
+```
+
+This launches a headless Playwright browser, registers/logs in, navigates every page,
+captures 17 screenshots to `static/guide/`, and captures chat command responses.
+The `/guide` route serves them as `<img src="/static/guide/...">`.
+
+When the user says "regenerate guide" or "update screenshots", run `python tests/capture_guide.py`.
+
+## Prompt Management
+
+System prompts are stored in `polly.prompts` table. `PromptService` (`utils/prompt_service.py`) resolves prompts with chain: user override → global DB default → hardcoded fallback. Template var `{{today}}` is replaced at resolve time. The `/instructions` route provides a per-agent editor with admin-only global prompt editing.
+
 ## Regulatory rules for generated content
 
 - Never guarantee investment returns or performance
