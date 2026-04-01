@@ -115,6 +115,19 @@ The `/guide` route serves them as `<img src="/static/guide/...">`.
 
 When the user says "regenerate guide" or "update screenshots", run `python tests/capture_guide.py`.
 
+## Slide Deck Generation
+
+```bash
+# Generate the PowerPoint presentation
+python docs/generate_pptx.py
+
+# Output: docs/POLLY_Platform_Overview.pptx (16 slides)
+# Uses screenshots from static/guide/ for slide visuals
+# Upload to Google Slides or open in PowerPoint
+```
+
+To regenerate after changes: update screenshots first (see User Guide Generation above), then run the script.
+
 ## Prompt Management
 
 System prompts are stored in `polly.prompts` table. `PromptService` (`utils/prompt_service.py`) resolves prompts with chain: user override → global DB default → hardcoded fallback. Template var `{{today}}` is replaced at resolve time. The `/instructions` route provides a per-agent editor with admin-only global prompt editing.

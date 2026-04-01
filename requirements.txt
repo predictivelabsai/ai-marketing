@@ -16,3 +16,4 @@ rich>=13.0.0
 playwright
 python-fasthtml
 langgraph
+python-pptx
