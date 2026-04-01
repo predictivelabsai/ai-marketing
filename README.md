@@ -57,6 +57,34 @@ polly> strategy:backtesting product:"FTSE Note"      # Historical analysis
 python polly.py test content:teaser product:"FTSE Autocallable"
 ```
 
+## RAG Document Search
+
+POLLY includes a vector search pipeline for querying financial product documents using natural language.
+
+```bash
+# Process documents into embeddings
+python tasks/create_rag.py
+
+# Query the knowledge base
+python tests/query_docs.py -q "What is the XTCC Solar product?"
+
+# Run full evaluation (8 questions, writes test-results/rag_evaluation.json)
+python tests/query_docs.py
+```
+
+**Latest evaluation**: 8/8 passed, 95.8% accuracy, 0.818 mean similarity. See [docs/rag_evaluation_report.md](docs/rag_evaluation_report.md) for detailed results.
+
+| Question | Score | Similarity |
+|----------|-------|------------|
+| What is the XTCC Solar structured product? | 1.0 | 0.810 |
+| What is the maturity/term? | 1.0 | 0.837 |
+| What currency denominations? | 1.0 | 0.842 |
+| Principal protection level? | 1.0 | 0.803 |
+| Who is the issuer? | 1.0 | 0.789 |
+| Key risks? | 0.67 | 0.784 |
+| What is the ISIN? | 1.0 | 0.813 |
+| What are carbon credits? | 1.0 | 0.864 |
+
 ## Compliance Workflow
 
 1. Load product documents via `compliance:submit`
