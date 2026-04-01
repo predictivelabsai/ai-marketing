@@ -164,6 +164,7 @@ def Navbar(active="", user=None):
         A("Chat", href="/chat", cls="active" if active == "chat" else ""),
     ]
     if user:
+        links.append(A("Instructions", href="/instructions", cls="active" if active == "instructions" else ""))
         links.append(A(user.get("display_name", "Profile"), href="/profile", cls="nav-user"))
         links.append(A("Logout", href="/logout"))
     else:
@@ -1538,6 +1539,7 @@ def _session_login(session, user: Dict):
         "user_id": str(user.get("id", "")),
         "email": user["email"],
         "display_name": display,
+        "persona": user.get("persona", "campaign"),
     }
 
 
@@ -2146,6 +2148,278 @@ def _skill_card(agent, name, desc):
         Div(desc, cls="sk-desc"),
         cls="skill-card",
     )
+
+
+# ---------------------------------------------------------------------------
+# Run
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Instructions Editor (requires login)
+# ---------------------------------------------------------------------------
+
+INSTR_CSS = """
+.instr-page {
+    max-width: 860px;
+    margin: 2rem auto;
+    padding: 0 2rem 4rem;
+}
+.instr-page h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+.instr-page .subtitle { color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.9375rem; }
+.instr-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.instr-top-bar .reload-btn {
+    padding: 0.5rem 1rem; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; color: white; font-size: 0.875rem; cursor: pointer; transition: all 0.2s;
+}
+.instr-top-bar .reload-btn:hover { border-color: var(--polly-primary); }
+
+.prompt-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    transition: border-color 0.2s;
+}
+.prompt-card.custom { border-color: var(--polly-primary); }
+.prompt-card.admin-card { border-color: var(--polly-accent); }
+
+.prompt-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;
+}
+.prompt-agent { font-weight: 600; font-size: 1rem; }
+.prompt-badge {
+    font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 500;
+}
+.prompt-badge.default { color: var(--text-muted); background: rgba(100,116,139,0.15); }
+.prompt-badge.custom { color: var(--polly-primary); background: rgba(99,102,241,0.15); }
+.prompt-badge.global { color: var(--polly-accent); background: rgba(245,158,11,0.15); }
+
+.prompt-card textarea {
+    width: 100%; min-height: 120px; padding: 0.75rem 1rem;
+    background: var(--bg-dark); border: 1px solid var(--border);
+    border-radius: 8px; color: white; font-family: monospace;
+    font-size: 0.85rem; line-height: 1.5; resize: vertical; outline: none;
+}
+.prompt-card textarea:focus { border-color: var(--polly-primary); }
+
+.prompt-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.prompt-actions button {
+    padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.85rem;
+    cursor: pointer; transition: all 0.2s; border: none;
+}
+.btn-save { background: var(--polly-primary); color: white; }
+.btn-save:hover { background: #5558e6; }
+.btn-reset { background: transparent; border: 1px solid var(--border) !important; color: var(--text-secondary); }
+.btn-reset:hover { border-color: var(--error) !important; color: var(--error); }
+.btn-save-global { background: var(--polly-accent); color: #000; }
+.btn-save-global:hover { background: #d97706; }
+
+.instr-msg {
+    padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+.instr-msg.success { background: rgba(46,160,67,0.1); color: #2ea043; }
+.instr-msg.error { background: rgba(224,108,117,0.1); color: #e06c75; }
+"""
+
+AGENT_LABELS = {
+    "content": ("📝", "Content Agent", "Copywriting, FAQs, teasers, pitch decks"),
+    "strategy": ("🎯", "Strategy Agent", "Market research, competitor analysis, backtesting"),
+    "compliance": ("🛡️", "Compliance Agent", "MiFID/PRIIPs review, risk warnings, document approval"),
+    "campaign": ("🚀", "Campaign Agent", "Campaign creation, workflows, A/B testing, leads"),
+    "channels": ("📱", "Channels Agent", "Multi-channel monitoring and analytics"),
+    "cro": ("📊", "CRO Agent", "Conversion rate optimization and page analysis"),
+    "seo": ("🔍", "SEO Agent", "Technical audits, schema markup, AI SEO"),
+    "ads": ("📣", "Ads Agent", "Paid advertising, A/B testing, analytics tracking"),
+}
+
+
+@rt("/instructions")
+def instructions(session, msg: str = "", msg_type: str = "success"):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    from utils.prompt_service import PromptService
+    svc = PromptService.get()
+    user_id = int(user["user_id"])
+    is_admin = user.get("persona") == "management"
+
+    all_prompts = svc.get_all_for_user(user_id)
+
+    sections = []
+
+    # Message banner
+    if msg:
+        sections.append(Div(msg, cls=f"instr-msg {msg_type}"))
+
+    # Top bar with reload button
+    sections.append(
+        Div(
+            Div(),
+            Form(
+                Button("↻ Reload from DB", type="submit", cls="reload-btn"),
+                method="post", action="/instructions/reload",
+            ),
+            cls="instr-top-bar",
+        ),
+    )
+
+    # Global instructions (admin only)
+    if is_admin:
+        global_text, global_source = all_prompts.get("_global", ("", "default"))
+        sections.append(
+            Div(
+                Div(
+                    Span("🌐 Global Instructions (prepended to all agents)", cls="prompt-agent"),
+                    Span("Admin only", cls="prompt-badge global"),
+                    cls="prompt-header",
+                ),
+                Form(
+                    NotStr(f'<textarea name="prompt_text" placeholder="Optional instructions prepended to every agent prompt...">{_esc(global_text)}</textarea>'),
+                    Input(type="hidden", name="agent_name", value="_global"),
+                    Input(type="hidden", name="scope", value="global"),
+                    Div(
+                        Button("Save Global Instructions", type="submit", cls="btn-save-global"),
+                        cls="prompt-actions",
+                    ),
+                    method="post", action="/instructions/save",
+                ),
+                cls="prompt-card admin-card",
+            ),
+        )
+
+    # Per-agent prompt editors
+    for agent_name, (icon, label, desc) in AGENT_LABELS.items():
+        prompt_text, source = all_prompts.get(agent_name, ("", "default"))
+        is_custom = source == "user"
+        card_cls = "prompt-card custom" if is_custom else "prompt-card"
+        badge_cls = "prompt-badge custom" if is_custom else "prompt-badge default"
+        badge_text = "Custom" if is_custom else ("Global" if source == "global" else "Default")
+
+        # Unique id for textarea so the "Save as Global" JS can copy its value
+        ta_id = f"ta-{agent_name}"
+
+        action_buttons = [
+            Button("Save Custom", type="submit", cls="btn-save"),
+        ]
+
+        card_parts = [
+            Div(
+                Span(f"{icon} {label}", cls="prompt-agent"),
+                Span(badge_text, cls=badge_cls),
+                cls="prompt-header",
+            ),
+            P(desc, style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;"),
+            Form(
+                NotStr(f'<textarea name="prompt_text" id="{ta_id}">{_esc(prompt_text)}</textarea>'),
+                Input(type="hidden", name="agent_name", value=agent_name),
+                Input(type="hidden", name="scope", value="user"),
+                Div(*action_buttons, cls="prompt-actions"),
+                method="post", action="/instructions/save",
+            ),
+        ]
+
+        # Extra buttons as separate forms (outside the main form to avoid nesting)
+        extra_actions = []
+        if is_custom:
+            extra_actions.append(
+                Form(
+                    Input(type="hidden", name="agent_name", value=agent_name),
+                    Button("Reset to Default", type="submit", cls="btn-reset"),
+                    method="post", action="/instructions/reset",
+                    style="display:inline-block; margin-top: 0.5rem;",
+                ),
+            )
+        if is_admin:
+            extra_actions.append(
+                NotStr(f'''<form method="post" action="/instructions/save" style="display:inline-block; margin-top: 0.5rem;"
+                    onsubmit="this.querySelector('textarea').value = document.getElementById('{ta_id}').value; return true;">
+                    <textarea name="prompt_text" style="display:none"></textarea>
+                    <input type="hidden" name="agent_name" value="{agent_name}">
+                    <input type="hidden" name="scope" value="global">
+                    <button type="submit" class="btn-save-global">Save as Global Default</button>
+                </form>'''),
+            )
+        if extra_actions:
+            card_parts.append(Div(*extra_actions, style="padding-left: 0;"))
+
+        sections.append(Div(*card_parts, cls=card_cls))
+
+    return Html(
+        Head(
+            Title("Instructions — POLLY"),
+            Style(BRAND_CSS + NAV_CSS + INSTR_CSS),
+        ),
+        Body(
+            Navbar(active="instructions", user=user),
+            Div(
+                H1("Instructions Editor"),
+                P("Customize the system prompts that power each POLLY agent. "
+                  "Use {{today}} for dynamic date insertion.",
+                  cls="subtitle"),
+                *sections,
+                cls="instr-page",
+            ),
+        ),
+    )
+
+
+def _esc(text: str) -> str:
+    """Escape HTML entities for embedding in textarea."""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+@rt("/instructions/save")
+def instructions_save(session, agent_name: str = "", prompt_text: str = "", scope: str = "user"):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    if not agent_name or not prompt_text.strip():
+        return RedirectResponse("/instructions?msg=Missing+agent+or+prompt+text&msg_type=error", status_code=303)
+
+    from utils.prompt_service import PromptService
+    svc = PromptService.get()
+    user_id = int(user["user_id"])
+
+    if scope == "global":
+        if user.get("persona") != "management":
+            return RedirectResponse("/instructions?msg=Only+management+can+edit+global+prompts&msg_type=error", status_code=303)
+        svc.save_prompt(agent_name, prompt_text.strip(), user_id=None)
+        return RedirectResponse(f"/instructions?msg=Global+prompt+for+{agent_name}+saved", status_code=303)
+    else:
+        svc.save_prompt(agent_name, prompt_text.strip(), user_id=user_id)
+        return RedirectResponse(f"/instructions?msg=Custom+prompt+for+{agent_name}+saved", status_code=303)
+
+
+@rt("/instructions/reset")
+def instructions_reset(session, agent_name: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    if not agent_name:
+        return RedirectResponse("/instructions?msg=Missing+agent+name&msg_type=error", status_code=303)
+
+    from utils.prompt_service import PromptService
+    svc = PromptService.get()
+    svc.delete_user_prompt(agent_name, int(user["user_id"]))
+    return RedirectResponse(f"/instructions?msg={agent_name}+reset+to+default", status_code=303)
+
+
+@rt("/instructions/reload")
+def instructions_reload(session):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    from utils.prompt_service import PromptService
+    svc = PromptService.get()
+    svc.reload(int(user["user_id"]))
+    svc.reload(None)  # Also reload global cache
+    return RedirectResponse("/instructions?msg=Prompts+reloaded+from+database", status_code=303)
 
 
 # ---------------------------------------------------------------------------

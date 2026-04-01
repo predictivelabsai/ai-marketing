@@ -15,6 +15,9 @@ class ComplianceAgent(BaseAgent):
     name = "compliance"
     description = "Document approval, regulatory review, MiFID/PRIIPs compliance"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -137,8 +140,10 @@ class ComplianceAgent(BaseAgent):
             if pinfo.get("required") and pname not in args:
                 return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt=f"Missing required parameter: {pname}")
 
+        prompt_base = self._get_system_prompt(context)
+
         if tool_name == "review":
-            return await self._review(args, context)
+            return await self._review(args, context, prompt_base)
         elif tool_name == "submit":
             return self._submit(args, context)
         elif tool_name == "approve":
@@ -146,13 +151,13 @@ class ComplianceAgent(BaseAgent):
         elif tool_name == "document-set":
             return self._document_set(context)
         elif tool_name == "target-market":
-            return await self._target_market(args, context)
+            return await self._target_market(args, context, prompt_base)
         elif tool_name == "risk-warnings":
-            return await self._risk_warnings(args, context)
+            return await self._risk_warnings(args, context, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
-    async def _review(self, args, context) -> ToolResult:
+    async def _review(self, args, context, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured. Set XAI_API_KEY in .env")
@@ -162,7 +167,7 @@ class ComplianceAgent(BaseAgent):
         jurisdiction = args.get("jurisdiction", "UK")
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Review the following {doc_type} marketing content for compliance with {jurisdiction} financial regulations.
 
@@ -258,7 +263,7 @@ Provide a compliance assessment with:
             lines.append("  No documents approved yet.")
         return ToolResult(status=ToolStatus.SUCCESS, output="\n".join(lines))
 
-    async def _target_market(self, args, context) -> ToolResult:
+    async def _target_market(self, args, context, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
@@ -273,7 +278,7 @@ Provide a compliance assessment with:
         else:
             existing = ""
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 {existing}
 {'Review the existing' if action == 'review' else 'Define a'} MiFID II target market assessment.
@@ -296,7 +301,7 @@ Cover:
         output = await xai.generate(system, prompt, max_tokens=2000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _risk_warnings(self, args, context) -> ToolResult:
+    async def _risk_warnings(self, args, context, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
@@ -307,7 +312,7 @@ Cover:
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
         channel_note = f"Format for {channel} channel." if channel else ""
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate required risk warnings and regulatory disclosures for a {product_type} in {jurisdiction}.
 {channel_note}

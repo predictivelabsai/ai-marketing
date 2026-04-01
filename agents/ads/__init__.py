@@ -15,6 +15,9 @@ class AdsAgent(BaseAgent):
     name = "ads"
     description = "Paid advertising, A/B testing, analytics"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -83,17 +86,18 @@ class AdsAgent(BaseAgent):
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured. Set XAI_API_KEY in .env")
 
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
+        prompt_base = self._get_system_prompt(context)
 
         if tool_name == "paid-ads":
-            return await self._paid_ads(args, xai, product_block)
+            return await self._paid_ads(args, xai, product_block, prompt_base)
         elif tool_name == "ab-test":
-            return await self._ab_test(args, xai, product_block)
+            return await self._ab_test(args, xai, product_block, prompt_base)
         elif tool_name == "analytics-tracking":
-            return await self._analytics_tracking(args, xai, product_block)
+            return await self._analytics_tracking(args, xai, product_block, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
-    async def _paid_ads(self, args, xai, product_block) -> ToolResult:
+    async def _paid_ads(self, args, xai, product_block, prompt_base) -> ToolResult:
         platform = args.get("platform", "")
         if not platform:
             return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt="Which ad platform? (google, meta, linkedin, tiktok, all)")
@@ -107,7 +111,7 @@ class AdsAgent(BaseAgent):
         audience_note = f"Target audience: {audience}" if audience else ""
         product_note = f"Product: {product}" if product else ""
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Design a {platform} ads campaign strategy. Goal: {goal}.
 {budget_note} {audience_note} {product_note}
@@ -116,7 +120,7 @@ Include: campaign structure, ad groups, targeting, bidding strategy, creative gu
         output = await xai.generate(system, f"Paid ads strategy for {platform}. {product_note}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _ab_test(self, args, xai, product_block) -> ToolResult:
+    async def _ab_test(self, args, xai, product_block, prompt_base) -> ToolResult:
         page = args.get("page", "")
         element = args.get("element", "")
         hypothesis = args.get("hypothesis", "")
@@ -126,7 +130,7 @@ Include: campaign structure, ad groups, targeting, bidding strategy, creative gu
         if not page and not element and not hypothesis:
             return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt="What to A/B test? Provide page:, element:, or hypothesis:")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Design an A/B test experiment with {variants} variants. Primary metric: {metric}.
 Include: hypothesis, control vs variant(s), sample size calculation, test duration estimate,
@@ -141,7 +145,7 @@ success criteria, statistical significance threshold, and analysis plan."""
         output = await xai.generate(system, f"Design A/B test: {test_desc}", max_tokens=2000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _analytics_tracking(self, args, xai, product_block) -> ToolResult:
+    async def _analytics_tracking(self, args, xai, product_block, prompt_base) -> ToolResult:
         scope = args.get("scope", "")
         if not scope:
             return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt="What scope to track? (e.g., 'full funnel', 'signup flow', 'checkout')")
@@ -149,7 +153,7 @@ success criteria, statistical significance threshold, and analysis plan."""
         platform = args.get("platform", "ga4")
         events = args.get("events", "recommended")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Design an analytics tracking plan for {platform}. Scope: {scope}. Event type: {events}.
 Include: event names, parameters, triggers, UTM conventions, data layer specifications,

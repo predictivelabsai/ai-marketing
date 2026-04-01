@@ -16,6 +16,9 @@ class SeoAgent(BaseAgent):
     name = "seo"
     description = "SEO audits, schema markup, competitor analysis"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -111,21 +114,22 @@ class SeoAgent(BaseAgent):
 
     async def execute(self, tool_name: str, args: dict[str, str], context) -> ToolResult:
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
+        prompt_base = self._get_system_prompt(context)
 
         if tool_name == "audit":
-            return await self._audit(args, context, product_block)
+            return await self._audit(args, context, product_block, prompt_base)
         elif tool_name == "programmatic":
-            return await self._programmatic(args, context, product_block)
+            return await self._programmatic(args, context, product_block, prompt_base)
         elif tool_name == "ai-seo":
-            return await self._ai_seo(args, context, product_block)
+            return await self._ai_seo(args, context, product_block, prompt_base)
         elif tool_name == "schema-markup":
-            return await self._schema_markup(args, context, product_block)
+            return await self._schema_markup(args, context, product_block, prompt_base)
         elif tool_name == "competitor-alternatives":
-            return await self._competitor_alternatives(args, context, product_block)
+            return await self._competitor_alternatives(args, context, product_block, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
-    async def _audit(self, args, context, product_block) -> ToolResult:
+    async def _audit(self, args, context, product_block, prompt_base) -> ToolResult:
         url = args.get("url")
         if not url:
             return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt="Which URL to audit?")
@@ -172,7 +176,7 @@ class SeoAgent(BaseAgent):
 
         # If XAI available and not shallow, enhance with AI analysis
         if xai and depth != "shallow":
-            system = f"""{SYSTEM_PROMPT_BASE}
+            system = f"""{prompt_base}
 {product_block}
 Analyze the following SEO audit data and provide prioritized recommendations.
 Structure: Critical Issues, Warnings, Opportunities, Quick Wins."""
@@ -182,7 +186,7 @@ Structure: Critical Issues, Warnings, Opportunities, Quick Wins."""
 
         return ToolResult(status=ToolStatus.SUCCESS, output=report)
 
-    async def _programmatic(self, args, context, product_block) -> ToolResult:
+    async def _programmatic(self, args, context, product_block, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI not configured")
@@ -194,7 +198,7 @@ Structure: Critical Issues, Warnings, Opportunities, Quick Wins."""
         keyword_pattern = args.get("keyword-pattern", "")
         count = args.get("count", "5")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Design a programmatic SEO page template.
 Include: page structure (HTML outline), keyword mapping, meta tag templates, internal linking strategy.
@@ -204,7 +208,7 @@ Generate {count} example pages."""
         output = await xai.generate(system, f"Programmatic SEO template: {template}\n{kw_note}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _ai_seo(self, args, context, product_block) -> ToolResult:
+    async def _ai_seo(self, args, context, product_block, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI not configured")
@@ -226,7 +230,7 @@ Generate {count} example pages."""
                 except Exception:
                     page_content = f"\n(Could not fetch URL: {url})"
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Optimize for AI search engines (Google AI Overview, ChatGPT, Perplexity).
 Focus on Answer Engine Optimization (AEO) and LLM Optimization (LLMO).
@@ -236,7 +240,7 @@ Output format: {fmt}."""
         output = await xai.generate(system, prompt, max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _schema_markup(self, args, context, product_block) -> ToolResult:
+    async def _schema_markup(self, args, context, product_block, prompt_base) -> ToolResult:
         url = args.get("url", "")
         action = args.get("action", "generate")
         schema_type = args.get("type", "")
@@ -265,7 +269,7 @@ Output format: {fmt}."""
 
             xai = context.get_integration("xai")
             if xai:
-                system = f"""{SYSTEM_PROMPT_BASE}
+                system = f"""{prompt_base}
 Validate the following JSON-LD structured data. Check for: completeness, correctness, recommended properties, Google rich result eligibility."""
                 validation = await xai.generate(system, "\n".join(lines))
                 lines.append(f"VALIDATION:\n{validation}")
@@ -280,7 +284,7 @@ Validate the following JSON-LD structured data. Check for: completeness, correct
         if not schema_type:
             return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt="Which schema type? (Organization, Product, FAQ, Article, SoftwareApplication, WebSite)")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate valid JSON-LD structured data for schema.org type: {schema_type}.
 Output only the JSON-LD script tag. Use realistic placeholder values."""
@@ -289,7 +293,7 @@ Output only the JSON-LD script tag. Use realistic placeholder values."""
         output = await xai.generate(system, f"Generate {schema_type} JSON-LD schema markup. {name_note}")
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _competitor_alternatives(self, args, context, product_block) -> ToolResult:
+    async def _competitor_alternatives(self, args, context, product_block, prompt_base) -> ToolResult:
         url = args.get("url", "")
         competitors = args.get("competitors", "")
         product = args.get("product", "")
@@ -314,7 +318,7 @@ Output only the JSON-LD script tag. Use realistic placeholder values."""
         product_name = product or (context.product.product if context.product.is_set() else "your product")
         comp_list = competitors or url
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Create competitor comparison / "alternatives to" SEO content.
 Include: comparison table, key differentiators, SEO-optimized headings, target keywords.

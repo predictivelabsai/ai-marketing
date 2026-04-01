@@ -15,6 +15,9 @@ class ChannelsAgent(BaseAgent):
     name = "channels"
     description = "Multi-channel monitoring, analytics, response consolidation"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -187,18 +190,20 @@ class ChannelsAgent(BaseAgent):
 
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
+        prompt_base = self._get_system_prompt(context)
+
         if tool_name == "report":
-            return await self._report(args, context, product_block)
+            return await self._report(args, context, product_block, prompt_base)
         elif tool_name in ("email", "instagram", "twitter", "tiktok", "crm"):
-            return await self._channel_analytics(tool_name, args, context, product_block)
+            return await self._channel_analytics(tool_name, args, context, product_block, prompt_base)
         elif tool_name in ("whatsapp", "telegram"):
             return self._messaging_channel(tool_name, args, context)
         elif tool_name == "compare":
-            return await self._compare(args, context, product_block)
+            return await self._compare(args, context, product_block, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
-    async def _report(self, args, context, product_block) -> ToolResult:
+    async def _report(self, args, context, product_block, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
@@ -208,7 +213,7 @@ class ChannelsAgent(BaseAgent):
         fmt = args.get("format", "detailed")
 
         campaign_note = f"Campaign: {campaign}" if campaign else "All campaigns"
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate a {fmt} cross-channel analytics report template.
 Period: {period}. {campaign_note}
@@ -234,7 +239,7 @@ Report structure:
         output = await xai.generate(system, f"Cross-channel report for {period}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _channel_analytics(self, channel, args, context, product_block) -> ToolResult:
+    async def _channel_analytics(self, channel, args, context, product_block, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
@@ -251,7 +256,7 @@ Report structure:
             "crm": "pipeline value, lead count, stage progression, activities logged, meetings booked",
         }
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate {channel} analytics report template.
 Campaign: {campaign}. Period: {period}. Focus: {metric}
@@ -297,7 +302,7 @@ Provide:
                    f"Run 'channels:{channel} action:authorize' to set up your number."
         )
 
-    async def _compare(self, args, context, product_block) -> ToolResult:
+    async def _compare(self, args, context, product_block, prompt_base) -> ToolResult:
         xai = context.get_integration("xai")
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
@@ -305,7 +310,7 @@ Provide:
         campaign = args["campaign"]
         channels = args.get("channels", "email,whatsapp,telegram,linkedin,x,instagram,tiktok")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Compare performance across channels for campaign: {campaign}
 Channels: {channels}

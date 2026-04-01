@@ -15,6 +15,9 @@ class CampaignAgent(BaseAgent):
     name = "campaign"
     description = "Campaign creation, workflows, monitoring, A/B testing"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -168,24 +171,26 @@ class CampaignAgent(BaseAgent):
         if hasattr(context, 'compliance_docs'):
             compliance_block = context.compliance_docs.to_prompt_block()
 
+        prompt_base = self._get_system_prompt(context)
+
         if tool_name == "create":
-            return await self._create(args, xai, product_block, compliance_block)
+            return await self._create(args, xai, product_block, compliance_block, prompt_base)
         elif tool_name == "warmup":
-            return await self._warmup(args, xai, product_block)
+            return await self._warmup(args, xai, product_block, prompt_base)
         elif tool_name == "workflow":
-            return await self._workflow(args, xai, product_block, compliance_block)
+            return await self._workflow(args, xai, product_block, compliance_block, prompt_base)
         elif tool_name == "monitor":
-            return await self._monitor(args, xai, product_block)
+            return await self._monitor(args, xai, product_block, prompt_base)
         elif tool_name == "follow-up":
-            return await self._follow_up(args, xai, product_block)
+            return await self._follow_up(args, xai, product_block, prompt_base)
         elif tool_name == "ab-test":
-            return await self._ab_test(args, xai, product_block)
+            return await self._ab_test(args, xai, product_block, prompt_base)
         elif tool_name == "leads":
-            return await self._leads(args, xai, product_block)
+            return await self._leads(args, xai, product_block, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
-    async def _create(self, args, xai, product_block, compliance_block) -> ToolResult:
+    async def _create(self, args, xai, product_block, compliance_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
@@ -196,7 +201,7 @@ class CampaignAgent(BaseAgent):
         topic = args.get("topic", "")
         duration = args.get("duration", "2w")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 {compliance_block}
 Create a comprehensive {campaign_type} campaign brief for financial product marketing.
@@ -218,7 +223,7 @@ Important: All content must be suitable for financial promotion regulations."""
         output = await xai.generate(system, prompt, max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _warmup(self, args, xai, product_block) -> ToolResult:
+    async def _warmup(self, args, xai, product_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
@@ -227,7 +232,7 @@ Important: All content must be suitable for financial promotion regulations."""
         audience = args.get("audience", "")
 
         audience_note = f"Target: {audience}" if audience else ""
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Create a lightweight warmup/polling campaign to test market interest.
 This is a pre-product-launch market test, not a financial promotion.
@@ -245,7 +250,7 @@ Keep the tone conversational and non-promotional. This is market research, not s
         output = await xai.generate(system, f"Warmup question: {question}", max_tokens=2000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _workflow(self, args, xai, product_block, compliance_block) -> ToolResult:
+    async def _workflow(self, args, xai, product_block, compliance_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
@@ -255,7 +260,7 @@ Keep the tone conversational and non-promotional. This is market research, not s
         calendly = args.get("calendly-link", "")
 
         calendly_note = f"Booking link for interested leads: {calendly}" if calendly else "Include placeholder for booking/calendly link."
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 {compliance_block}
 Design a campaign automation workflow for: {campaign}
@@ -281,7 +286,7 @@ Output as a clear workflow diagram (text-based) with decision points."""
         output = await xai.generate(system, f"Design workflow for campaign: {campaign}", max_tokens=2500)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _monitor(self, args, xai, product_block) -> ToolResult:
+    async def _monitor(self, args, xai, product_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
@@ -289,7 +294,7 @@ Output as a clear workflow diagram (text-based) with decision points."""
         summary = args.get("summary", "false")
         metric = args.get("metric", "")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate a campaign monitoring report template for: {campaign}
 
@@ -313,7 +318,7 @@ Provide:
         output = await xai.generate(system, f"Campaign report for: {campaign}")
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _follow_up(self, args, xai, product_block) -> ToolResult:
+    async def _follow_up(self, args, xai, product_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
@@ -321,7 +326,7 @@ Provide:
         touch = args.get("touch", "1")
         channel = args.get("channel", "email")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate follow-up message #{touch} for non-responders in campaign: {campaign}
 Channel: {channel}
@@ -337,7 +342,7 @@ Adapt length and format to {channel} conventions."""
         output = await xai.generate(system, f"Follow-up #{touch} for {campaign} via {channel}")
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _ab_test(self, args, xai, product_block) -> ToolResult:
+    async def _ab_test(self, args, xai, product_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
@@ -346,7 +351,7 @@ Adapt length and format to {channel} conventions."""
         variants = args.get("variants", "2")
 
         campaign_note = f"Campaign: {campaign}" if campaign else ""
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Design an A/B test for: {element}
 {campaign_note}
@@ -365,14 +370,14 @@ All variants must comply with financial marketing regulations."""
         output = await xai.generate(system, f"A/B test for {element}")
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _leads(self, args, xai, product_block) -> ToolResult:
+    async def _leads(self, args, xai, product_block, prompt_base) -> ToolResult:
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured.")
 
         campaign = args["campaign"]
         action = args.get("action", "analyze")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 {action.title()} leads for campaign: {campaign}
 

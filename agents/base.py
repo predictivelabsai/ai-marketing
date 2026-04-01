@@ -73,3 +73,16 @@ class BaseAgent(ABC):
         if not tool:
             return []
         return [f"{k}:" for k in tool.parameters]
+
+    def _get_system_prompt(self, context: Any = None) -> str:
+        """Get system prompt from DB (with user override) or fall back to hardcoded default."""
+        try:
+            from utils.prompt_service import PromptService
+            user_id = getattr(context, "user_id", None) if context else None
+            return PromptService.get().resolve(self.name, user_id)
+        except Exception:
+            return self._get_default_prompt()
+
+    def _get_default_prompt(self) -> str:
+        """Override in subclass to return the hardcoded SYSTEM_PROMPT_BASE."""
+        return ""

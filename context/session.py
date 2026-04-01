@@ -135,6 +135,7 @@ class SessionContext:
         self.product = ProductContext()
         self.compliance_docs = ComplianceDocSet()
         self.persona: UserPersona = UserPersona.CAMPAIGN
+        self.user_id: Optional[int] = None
         self.campaigns: dict[str, Any] = {}
         self.scratch: dict[str, Any] = {}
         self._integrations: dict[str, Any] = {}

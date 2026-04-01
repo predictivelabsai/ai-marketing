@@ -17,6 +17,9 @@ class StrategyAgent(BaseAgent):
     name = "strategy"
     description = "Distribution strategy, market research, competitor analysis, product positioning"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -148,18 +151,19 @@ class StrategyAgent(BaseAgent):
             if pinfo.get("required") and pname not in args:
                 return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt=f"Missing required parameter: {pname}")
 
+        prompt_base = self._get_system_prompt(context)
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
         if tool_name == "launch":
-            return await self._launch(args, xai, product_block)
+            return await self._launch(args, xai, product_block, prompt_base)
         elif tool_name == "market-research":
-            return await self._market_research(args, xai, product_block)
+            return await self._market_research(args, xai, product_block, prompt_base)
         elif tool_name == "competitor-matrix":
-            return await self._competitor_matrix(args, xai, product_block)
+            return await self._competitor_matrix(args, xai, product_block, prompt_base)
         elif tool_name == "ideas":
-            return await self._ideas(args, xai, product_block)
+            return await self._ideas(args, xai, product_block, prompt_base)
         elif tool_name == "backtesting":
-            return await self._backtesting(args, xai, product_block)
+            return await self._backtesting(args, xai, product_block, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
@@ -185,13 +189,13 @@ class StrategyAgent(BaseAgent):
                 output="No product context set yet.\n\nSet it with:\n  strategy:product-context set company:YourCo product:\"Your Product\" audience:\"Target Audience\"",
             )
 
-    async def _launch(self, args, xai, product_block) -> ToolResult:
+    async def _launch(self, args, xai, product_block, prompt_base) -> ToolResult:
         product = args["product"]
         stage = args.get("stage", "full")
         channels = args.get("channels", "")
 
         channel_note = f"Focus channels: {channels}" if channels else "Cover all relevant distribution channels."
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Create a {stage} financial product launch and distribution plan. {channel_note}
 Include: timeline, distribution channel strategies, advisor communications, regulatory considerations, KPIs, and risk mitigation."""
@@ -199,12 +203,12 @@ Include: timeline, distribution channel strategies, advisor communications, regu
         output = await xai.generate(system, f"Launch plan for: {product}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _market_research(self, args, xai, product_block) -> ToolResult:
+    async def _market_research(self, args, xai, product_block, prompt_base) -> ToolResult:
         sector = args.get("sector", "")
         topic = args.get("topic", "")
         region = args.get("region", "UK/Europe")
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Conduct market research analysis for {region}.
 {"Sector: " + sector if sector else ""}
@@ -222,13 +226,13 @@ Analyze:
         output = await xai.generate(system, f"Market research: {prompt}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _competitor_matrix(self, args, xai, product_block) -> ToolResult:
+    async def _competitor_matrix(self, args, xai, product_block, prompt_base) -> ToolResult:
         product = args["product"]
         competitors = args.get("competitors", "")
         criteria = args.get("criteria", "all")
 
         comp_note = f"Compare against: {competitors}" if competitors else "Identify key competitors."
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Build a competitor analysis matrix. {comp_note}
 Focus: {criteria}
@@ -245,13 +249,13 @@ Matrix should cover:
         output = await xai.generate(system, f"Competitor matrix for: {product}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _ideas(self, args, xai, product_block) -> ToolResult:
+    async def _ideas(self, args, xai, product_block, prompt_base) -> ToolResult:
         topic = args["topic"]
         count = args.get("count", "10")
         channel = args.get("channel", "")
 
         channel_note = f"Focus on {channel} channel." if channel else "Cover multiple distribution and marketing channels."
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Generate {count} actionable financial product marketing and distribution ideas. {channel_note}
 Consider regulatory constraints on financial promotions.
@@ -260,13 +264,13 @@ For each idea: title, description, effort (low/med/high), impact (low/med/high),
         output = await xai.generate(system, f"Marketing ideas for: {topic}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _backtesting(self, args, xai, product_block) -> ToolResult:
+    async def _backtesting(self, args, xai, product_block, prompt_base) -> ToolResult:
         product = args["product"]
         period = args.get("period", "5y")
         underlying = args.get("underlying", "")
 
         underlying_note = f"Underlying: {underlying}" if underlying else ""
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Create backtesting analysis content for: {product}
 Period: {period}. {underlying_note}

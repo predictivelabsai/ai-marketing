@@ -17,6 +17,9 @@ class CroAgent(BaseAgent):
     name = "cro"
     description = "Conversion rate optimization & page analysis"
 
+    def _get_default_prompt(self) -> str:
+        return SYSTEM_PROMPT_BASE
+
     def get_tools(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
@@ -113,9 +116,11 @@ class CroAgent(BaseAgent):
         if not xai:
             return ToolResult(status=ToolStatus.ERROR, error="XAI integration not configured. Set XAI_API_KEY in .env")
 
+        prompt_base = self._get_system_prompt(context)
+
         # free-tool-strategy doesn't need playwright
         if tool_name == "free-tool-strategy":
-            return await self._free_tool_strategy(args, xai, context)
+            return await self._free_tool_strategy(args, xai, context, prompt_base)
 
         playwright = context.get_integration("playwright")
         if not playwright:
@@ -125,9 +130,9 @@ class CroAgent(BaseAgent):
         if not url:
             return ToolResult(status=ToolStatus.NEEDS_INPUT, follow_up_prompt="Which URL to analyze?")
 
-        return await self._analyze_page(tool_name, url, args, xai, playwright, context)
+        return await self._analyze_page(tool_name, url, args, xai, playwright, context, prompt_base)
 
-    async def _analyze_page(self, tool_name, url, args, xai, playwright, context) -> ToolResult:
+    async def _analyze_page(self, tool_name, url, args, xai, playwright, context, prompt_base) -> ToolResult:
         """Common pattern: fetch page → analyze with XAI."""
         try:
             snapshot = await playwright.get_page_snapshot(url)
@@ -153,7 +158,7 @@ class CroAgent(BaseAgent):
         if extra_focus:
             focus += f"\nAdditional focus: {extra_focus}"
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Perform a {focus}.
 Structure your response with: Summary, Key Findings (with priority), Recommendations, Quick Wins."""
@@ -169,12 +174,12 @@ Page HTML (excerpt):
         output = await xai.generate(system, user_prompt, max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _free_tool_strategy(self, args, xai, context) -> ToolResult:
+    async def _free_tool_strategy(self, args, xai, context, prompt_base) -> ToolResult:
         industry = args["industry"]
         goal = args.get("goal", "email signups")
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
-        system = f"""{SYSTEM_PROMPT_BASE}
+        system = f"""{prompt_base}
 {product_block}
 Plan a free tool strategy for lead generation.
 Goal: {goal}. Industry: {industry}.
