@@ -2195,13 +2195,26 @@ INSTR_CSS = """
 .prompt-badge.custom { color: var(--polly-primary); background: rgba(99,102,241,0.15); }
 .prompt-badge.global { color: var(--polly-accent); background: rgba(245,158,11,0.15); }
 
-.prompt-card textarea {
-    width: 100%; min-height: 120px; padding: 0.75rem 1rem;
+.prompt-card textarea { display: none; }
+.prompt-card .ql-container {
     background: var(--bg-dark); border: 1px solid var(--border);
-    border-radius: 8px; color: white; font-family: monospace;
-    font-size: 0.85rem; line-height: 1.5; resize: vertical; outline: none;
+    border-radius: 0 0 8px 8px; color: white; font-size: 0.9rem;
+    min-height: 120px;
 }
-.prompt-card textarea:focus { border-color: var(--polly-primary); }
+.prompt-card .ql-toolbar {
+    background: #151d2e; border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0; border-bottom: none;
+}
+.prompt-card .ql-toolbar .ql-stroke { stroke: var(--text-secondary); }
+.prompt-card .ql-toolbar .ql-fill { fill: var(--text-secondary); }
+.prompt-card .ql-toolbar .ql-picker-label { color: var(--text-secondary); }
+.prompt-card .ql-toolbar button:hover .ql-stroke { stroke: white; }
+.prompt-card .ql-toolbar button:hover .ql-fill { fill: white; }
+.prompt-card .ql-toolbar button.ql-active .ql-stroke { stroke: var(--polly-primary); }
+.prompt-card .ql-toolbar button.ql-active .ql-fill { fill: var(--polly-primary); }
+.prompt-card .ql-editor { min-height: 120px; line-height: 1.6; }
+.prompt-card .ql-editor p { margin-bottom: 0.5em; }
+.prompt-card .ql-editor.ql-blank::before { color: var(--text-muted); font-style: normal; }
 
 .prompt-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
 .prompt-actions button {
@@ -2233,6 +2246,68 @@ AGENT_LABELS = {
     "seo": ("🔍", "SEO Agent", "Technical audits, schema markup, AI SEO"),
     "ads": ("📣", "Ads Agent", "Paid advertising, A/B testing, analytics tracking"),
 }
+
+QUILL_INIT_JS = """
+document.addEventListener('DOMContentLoaded', function() {
+    var toolbarOptions = [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['clean']
+    ];
+
+    document.querySelectorAll('.prompt-card').forEach(function(card) {
+        var ta = card.querySelector('textarea[name="prompt_text"]');
+        if (!ta) return;
+
+        // Create editor div
+        var editorDiv = document.createElement('div');
+        editorDiv.className = 'quill-editor';
+        ta.parentNode.insertBefore(editorDiv, ta);
+
+        // Initialize Quill
+        var quill = new Quill(editorDiv, {
+            theme: 'snow',
+            modules: { toolbar: toolbarOptions },
+            placeholder: ta.placeholder || 'Enter instructions...'
+        });
+
+        // Set initial content from textarea (plain text → formatted)
+        if (ta.value.trim()) {
+            // Convert plain text with newlines to paragraphs
+            var lines = ta.value.split('\\n');
+            var delta = [];
+            lines.forEach(function(line) {
+                delta.push({ insert: line + '\\n' });
+            });
+            quill.setContents(delta);
+        }
+
+        // Before form submit, copy Quill content back to textarea as plain text
+        var form = ta.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                ta.value = quill.getText().trim();
+            });
+        }
+
+        // Also handle "Save as Global Default" forms that copy from this editor
+        var taId = ta.id;
+        if (taId) {
+            // Find any form with onsubmit referencing this textarea id
+            document.querySelectorAll('form[onsubmit]').forEach(function(f) {
+                if (f.getAttribute('onsubmit').indexOf(taId) !== -1) {
+                    f.addEventListener('submit', function() {
+                        var hiddenTa = f.querySelector('textarea[name="prompt_text"]');
+                        if (hiddenTa) {
+                            hiddenTa.value = quill.getText().trim();
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+"""
 
 
 @rt("/instructions")
@@ -2351,6 +2426,7 @@ def instructions(session, msg: str = "", msg_type: str = "success"):
         Head(
             Title("Instructions — POLLY"),
             Style(BRAND_CSS + NAV_CSS + INSTR_CSS),
+            Link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"),
         ),
         Body(
             Navbar(active="instructions", user=user),
@@ -2362,6 +2438,8 @@ def instructions(session, msg: str = "", msg_type: str = "success"):
                 *sections,
                 cls="instr-page",
             ),
+            Script(src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"),
+            Script(QUILL_INIT_JS),
         ),
     )
 
