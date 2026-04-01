@@ -1,0 +1,256 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]: POLLY
+    - generic [ref=e4]:
+      - link "Home" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - link "About" [ref=e6] [cursor=pointer]:
+        - /url: /about
+      - link "Demo" [ref=e7] [cursor=pointer]:
+        - /url: /demo
+      - link "Chat" [ref=e8] [cursor=pointer]:
+        - /url: /chat
+      - link "Instructions" [ref=e9] [cursor=pointer]:
+        - /url: /instructions
+      - link "Test Admin" [ref=e10] [cursor=pointer]:
+        - /url: /profile
+      - link "Logout" [ref=e11] [cursor=pointer]:
+        - /url: /logout
+  - generic [ref=e12]:
+    - heading "Instructions Editor" [level=1] [ref=e13]
+    - paragraph [ref=e14]: "Customize the system prompts that power each POLLY agent. Use {{today}} for dynamic date insertion."
+    - button "↻ Reload from DB" [ref=e17] [cursor=pointer]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]: 🌐 Global Instructions (prepended to all agents)
+        - generic [ref=e21]: Admin only
+      - generic [ref=e22]:
+        - toolbar [ref=e23]:
+          - generic [ref=e24]:
+            - button "bold" [ref=e25] [cursor=pointer]:
+              - img [ref=e26]
+            - button "italic" [ref=e29] [cursor=pointer]:
+              - img [ref=e30]
+            - button "underline" [ref=e32] [cursor=pointer]:
+              - img [ref=e33]
+          - generic [ref=e36]:
+            - 'button "list: ordered" [ref=e37] [cursor=pointer]':
+              - img [ref=e38]
+            - 'button "list: bullet" [ref=e42] [cursor=pointer]':
+              - img [ref=e43]
+          - button "clean" [ref=e45] [cursor=pointer]:
+            - img [ref=e46]
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - text: Optional instructions prepended to every agent prompt...
+            - paragraph [ref=e53]
+          - text: "Visit URL: EditRemove"
+        - button "Save Global Instructions" [ref=e55] [cursor=pointer]
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - generic [ref=e58]: 📝 Content Agent
+        - generic [ref=e59]: Global
+      - paragraph [ref=e60]: Copywriting, FAQs, teasers, pitch decks
+      - generic [ref=e61]:
+        - toolbar [ref=e62]:
+          - generic [ref=e63]:
+            - button "bold" [ref=e64] [cursor=pointer]:
+              - img [ref=e65]
+            - button "italic" [ref=e68] [cursor=pointer]:
+              - img [ref=e69]
+            - button "underline" [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+          - generic [ref=e75]:
+            - 'button "list: ordered" [ref=e76] [cursor=pointer]':
+              - img [ref=e77]
+            - 'button "list: bullet" [ref=e81] [cursor=pointer]':
+              - img [ref=e82]
+          - button "clean" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+        - generic [ref=e90]:
+          - paragraph [ref=e92]: "You are POLLY Content, an AI content specialist for financial product marketing. Today's date is {{today}}. You create compliant marketing content for financial advisors and product distributors. All content must be fair, clear, and not misleading per FCA/MiFID II guidelines. Never make guarantees about returns or performance. Always include appropriate risk warnings where required."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e94] [cursor=pointer]
+      - button "Save as Global Default" [ref=e97]
+    - generic [ref=e98]:
+      - generic [ref=e99]:
+        - generic [ref=e100]: 🎯 Strategy Agent
+        - generic [ref=e101]: Global
+      - paragraph [ref=e102]: Market research, competitor analysis, backtesting
+      - generic [ref=e103]:
+        - toolbar [ref=e104]:
+          - generic [ref=e105]:
+            - button "bold" [ref=e106] [cursor=pointer]:
+              - img [ref=e107]
+            - button "italic" [ref=e110] [cursor=pointer]:
+              - img [ref=e111]
+            - button "underline" [ref=e113] [cursor=pointer]:
+              - img [ref=e114]
+          - generic [ref=e117]:
+            - 'button "list: ordered" [ref=e118] [cursor=pointer]':
+              - img [ref=e119]
+            - 'button "list: bullet" [ref=e123] [cursor=pointer]':
+              - img [ref=e124]
+          - button "clean" [ref=e126] [cursor=pointer]:
+            - img [ref=e127]
+        - generic [ref=e132]:
+          - paragraph [ref=e134]: "You are POLLY Strategy, an AI strategist for financial product distribution and marketing. Today's date is {{today}}. You help financial advisors and product manufacturers plan go-to-market strategies, distribution approaches, and marketing campaigns for financial products. All strategies must consider MiFID II product governance, target market requirements, and financial promotion regulations."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e136] [cursor=pointer]
+      - button "Save as Global Default" [ref=e139]
+    - generic [ref=e140]:
+      - generic [ref=e141]:
+        - generic [ref=e142]: 🛡️ Compliance Agent
+        - generic [ref=e143]: Global
+      - paragraph [ref=e144]: MiFID/PRIIPs review, risk warnings, document approval
+      - generic [ref=e145]:
+        - toolbar [ref=e146]:
+          - generic [ref=e147]:
+            - button "bold" [ref=e148] [cursor=pointer]:
+              - img [ref=e149]
+            - button "italic" [ref=e152] [cursor=pointer]:
+              - img [ref=e153]
+            - button "underline" [ref=e155] [cursor=pointer]:
+              - img [ref=e156]
+          - generic [ref=e159]:
+            - 'button "list: ordered" [ref=e160] [cursor=pointer]':
+              - img [ref=e161]
+            - 'button "list: bullet" [ref=e165] [cursor=pointer]':
+              - img [ref=e166]
+          - button "clean" [ref=e168] [cursor=pointer]:
+            - img [ref=e169]
+        - generic [ref=e174]:
+          - paragraph [ref=e176]: "You are POLLY Compliance, an AI compliance assistant for financial product marketing. Today's date is {{today}}. You ensure all marketing content complies with MiFID II, PRIIPs regulations, FCA guidelines, and relevant financial marketing regulations. You NEVER provide investment advice. You focus on regulatory compliance of marketing materials."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e178] [cursor=pointer]
+      - button "Save as Global Default" [ref=e181]
+    - generic [ref=e182]:
+      - generic [ref=e183]:
+        - generic [ref=e184]: 🚀 Campaign Agent
+        - generic [ref=e185]: Global
+      - paragraph [ref=e186]: Campaign creation, workflows, A/B testing, leads
+      - generic [ref=e187]:
+        - toolbar [ref=e188]:
+          - generic [ref=e189]:
+            - button "bold" [ref=e190] [cursor=pointer]:
+              - img [ref=e191]
+            - button "italic" [ref=e194] [cursor=pointer]:
+              - img [ref=e195]
+            - button "underline" [ref=e197] [cursor=pointer]:
+              - img [ref=e198]
+          - generic [ref=e201]:
+            - 'button "list: ordered" [ref=e202] [cursor=pointer]':
+              - img [ref=e203]
+            - 'button "list: bullet" [ref=e207] [cursor=pointer]':
+              - img [ref=e208]
+          - button "clean" [ref=e210] [cursor=pointer]:
+            - img [ref=e211]
+        - generic [ref=e216]:
+          - paragraph [ref=e218]: "You are POLLY Campaign Manager, an AI campaign management assistant for financial product marketing. Today's date is {{today}}. You help plan, execute, and monitor marketing campaigns for financial products while ensuring compliance with financial marketing regulations."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e220] [cursor=pointer]
+      - button "Save as Global Default" [ref=e223]
+    - generic [ref=e224]:
+      - generic [ref=e225]:
+        - generic [ref=e226]: 📱 Channels Agent
+        - generic [ref=e227]: Global
+      - paragraph [ref=e228]: Multi-channel monitoring and analytics
+      - generic [ref=e229]:
+        - toolbar [ref=e230]:
+          - generic [ref=e231]:
+            - button "bold" [ref=e232] [cursor=pointer]:
+              - img [ref=e233]
+            - button "italic" [ref=e236] [cursor=pointer]:
+              - img [ref=e237]
+            - button "underline" [ref=e239] [cursor=pointer]:
+              - img [ref=e240]
+          - generic [ref=e243]:
+            - 'button "list: ordered" [ref=e244] [cursor=pointer]':
+              - img [ref=e245]
+            - 'button "list: bullet" [ref=e249] [cursor=pointer]':
+              - img [ref=e250]
+          - button "clean" [ref=e252] [cursor=pointer]:
+            - img [ref=e253]
+        - generic [ref=e258]:
+          - paragraph [ref=e260]: "You are POLLY Channel Analyst, an AI assistant that monitors and analyzes marketing performance across multiple communication channels for financial product campaigns. Today's date is {{today}}. You consolidate data from email, WhatsApp, Telegram, social media, and CRM systems."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e262] [cursor=pointer]
+      - button "Save as Global Default" [ref=e265]
+    - generic [ref=e266]:
+      - generic [ref=e267]:
+        - generic [ref=e268]: 📊 CRO Agent
+        - generic [ref=e269]: Global
+      - paragraph [ref=e270]: Conversion rate optimization and page analysis
+      - generic [ref=e271]:
+        - toolbar [ref=e272]:
+          - generic [ref=e273]:
+            - button "bold" [ref=e274] [cursor=pointer]:
+              - img [ref=e275]
+            - button "italic" [ref=e278] [cursor=pointer]:
+              - img [ref=e279]
+            - button "underline" [ref=e281] [cursor=pointer]:
+              - img [ref=e282]
+          - generic [ref=e285]:
+            - 'button "list: ordered" [ref=e286] [cursor=pointer]':
+              - img [ref=e287]
+            - 'button "list: bullet" [ref=e291] [cursor=pointer]':
+              - img [ref=e292]
+          - button "clean" [ref=e294] [cursor=pointer]:
+            - img [ref=e295]
+        - generic [ref=e300]:
+          - paragraph [ref=e302]: "You are an expert conversion rate optimization (CRO) specialist. Today's date is {{today}}. Analyze the provided page data and give specific, actionable recommendations with priority ratings (high/medium/low) and expected impact. Reference current best practices and recent industry benchmarks."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e304] [cursor=pointer]
+      - button "Save as Global Default" [ref=e307]
+    - generic [ref=e308]:
+      - generic [ref=e309]:
+        - generic [ref=e310]: 🔍 SEO Agent
+        - generic [ref=e311]: Global
+      - paragraph [ref=e312]: Technical audits, schema markup, AI SEO
+      - generic [ref=e313]:
+        - toolbar [ref=e314]:
+          - generic [ref=e315]:
+            - button "bold" [ref=e316] [cursor=pointer]:
+              - img [ref=e317]
+            - button "italic" [ref=e320] [cursor=pointer]:
+              - img [ref=e321]
+            - button "underline" [ref=e323] [cursor=pointer]:
+              - img [ref=e324]
+          - generic [ref=e327]:
+            - 'button "list: ordered" [ref=e328] [cursor=pointer]':
+              - img [ref=e329]
+            - 'button "list: bullet" [ref=e333] [cursor=pointer]':
+              - img [ref=e334]
+          - button "clean" [ref=e336] [cursor=pointer]:
+            - img [ref=e337]
+        - generic [ref=e342]:
+          - paragraph [ref=e344]: "You are an expert SEO specialist. Today's date is {{today}}. Provide specific, actionable recommendations with priority ratings and expected impact on search rankings. Reference current algorithm updates and recent best practices."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e346] [cursor=pointer]
+      - button "Save as Global Default" [ref=e349]
+    - generic [ref=e350]:
+      - generic [ref=e351]:
+        - generic [ref=e352]: 📣 Ads Agent
+        - generic [ref=e353]: Global
+      - paragraph [ref=e354]: Paid advertising, A/B testing, analytics tracking
+      - generic [ref=e355]:
+        - toolbar [ref=e356]:
+          - generic [ref=e357]:
+            - button "bold" [ref=e358] [cursor=pointer]:
+              - img [ref=e359]
+            - button "italic" [ref=e362] [cursor=pointer]:
+              - img [ref=e363]
+            - button "underline" [ref=e365] [cursor=pointer]:
+              - img [ref=e366]
+          - generic [ref=e369]:
+            - 'button "list: ordered" [ref=e370] [cursor=pointer]':
+              - img [ref=e371]
+            - 'button "list: bullet" [ref=e375] [cursor=pointer]':
+              - img [ref=e376]
+          - button "clean" [ref=e378] [cursor=pointer]:
+            - img [ref=e379]
+        - generic [ref=e384]:
+          - paragraph [ref=e386]: "You are an expert paid advertising and growth marketing specialist. Today's date is {{today}}. Provide data-driven, actionable recommendations using current platform features and recent benchmarks."
+          - text: "Visit URL: EditRemove"
+        - button "Save Custom" [ref=e388] [cursor=pointer]
+      - button "Save as Global Default" [ref=e391]

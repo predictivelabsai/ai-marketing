@@ -1,0 +1,52 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]: POLLY
+    - generic [ref=e4]:
+      - link "Home" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - link "About" [ref=e6] [cursor=pointer]:
+        - /url: /about
+      - link "Demo" [ref=e7] [cursor=pointer]:
+        - /url: /demo
+      - link "Chat" [ref=e8] [cursor=pointer]:
+        - /url: /chat
+      - link "Instructions" [ref=e9] [cursor=pointer]:
+        - /url: /instructions
+      - link "Test Admin" [ref=e10] [cursor=pointer]:
+        - /url: /profile
+      - link "Logout" [ref=e11] [cursor=pointer]:
+        - /url: /logout
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - heading "Hi Test Admin, how can I help?" [level=1] [ref=e15]
+        - paragraph [ref=e16]: Choose a skill below or type anything to get started.
+      - generic [ref=e17]:
+        - generic [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: 🚀
+          - generic [ref=e20]: Launch Campaign
+          - generic [ref=e21]: Plan and execute a multi-channel campaign
+        - generic [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: 🛡️
+          - generic [ref=e24]: Compliance Review
+          - generic [ref=e25]: Check content against MiFID II / FCA rules
+        - generic [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: 📝
+          - generic [ref=e28]: Create Content
+          - generic [ref=e29]: Generate teasers, FAQs, pitch decks
+        - generic [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: 📊
+          - generic [ref=e32]: Campaign Analytics
+          - generic [ref=e33]: Cross-channel performance reports
+        - generic [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]: 🔍
+          - generic [ref=e36]: SEO & Research
+          - generic [ref=e37]: Audits, competitor analysis, market research
+        - generic [ref=e38] [cursor=pointer]:
+          - generic [ref=e39]: 📱
+          - generic [ref=e40]: Channel Monitor
+          - generic [ref=e41]: Track WhatsApp, email, Telegram responses
+    - generic [ref=e42]:
+      - textbox "Message POLLY... (Enter to send, Shift+Enter for new line)" [ref=e43]
+      - button [ref=e44] [cursor=pointer]:
+        - img [ref=e45]
