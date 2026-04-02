@@ -2795,6 +2795,15 @@ def documents(session, msg: str = "", msg_type: str = "success"):
                         style="display:inline",
                     )
                 )
+            if is_management and d["approved"]:
+                actions.append(
+                    Form(
+                        Input(type="hidden", name="doc_id", value=str(d["id"])),
+                        Button("Revoke", cls="btn-sm btn-reject", type="submit"),
+                        action="/documents/revoke", method="post",
+                        style="display:inline",
+                    )
+                )
             if is_management:
                 actions.append(
                     Form(
@@ -2854,8 +2863,15 @@ def documents(session, msg: str = "", msg_type: str = "success"):
                 Div(
                     f"Logged in as: {user.get('display_name', '')} "
                     f"({user.get('persona', 'campaign')})"
-                    + (" — you can approve and delete documents" if is_management else ""),
+                    + (" — you can approve, revoke, and delete documents" if is_management else ""),
                     cls="processing-info",
+                ),
+                *(
+                    [Div(
+                        A("Manage Users →", href="/users",
+                          style="color: var(--polly-primary); font-weight: 500; font-size: 0.875rem;"),
+                        style="margin-bottom: 0.5rem;",
+                    )] if is_management else []
                 ),
 
                 # Documents table
@@ -2946,7 +2962,7 @@ def _upload_form(user):
 
 
 @rt("/upload")
-async def upload_post(session, file, product_id: str = "", doc_type: str = "",
+async def upload_post(session, file: UploadFile, product_id: str = "", doc_type: str = "",
                       jurisdiction: str = "UK"):
     user = session.get("user")
     if not user:
@@ -3032,6 +3048,39 @@ async def documents_approve(session, doc_id: int = 0):
                                 status_code=303)
 
 
+@rt("/documents/revoke")
+async def documents_revoke(session, doc_id: int = 0):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if user.get("persona") != "management":
+        return RedirectResponse("/documents?msg=Only+management+can+revoke&msg_type=error",
+                                status_code=303)
+    if not doc_id:
+        return RedirectResponse("/documents?msg=Invalid+document&msg_type=error", status_code=303)
+
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            s.execute(text("""
+                UPDATE polly_rag_hierarchical.documents
+                SET approved = FALSE, approved_by = NULL, approved_at = NULL
+                WHERE id = :doc_id
+            """), {"doc_id": doc_id})
+            s.execute(text("""
+                UPDATE polly_rag_hierarchical.chunks
+                SET approved = FALSE
+                WHERE document_id = :doc_id
+            """), {"doc_id": doc_id})
+        return RedirectResponse("/documents?msg=Document+approval+revoked.+RAG+will+stop+using+it.",
+                                status_code=303)
+    except Exception as e:
+        return RedirectResponse(f"/documents?msg=Error:+{str(e)[:80]}&msg_type=error",
+                                status_code=303)
+
+
 @rt("/documents/delete")
 async def documents_delete(session, doc_id: int = 0):
     user = session.get("user")
@@ -3058,6 +3107,162 @@ async def documents_delete(session, doc_id: int = 0):
         return RedirectResponse("/documents?msg=Document+deleted.", status_code=303)
     except Exception as e:
         return RedirectResponse(f"/documents?msg=Error:+{str(e)[:80]}&msg_type=error",
+                                status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# User Role Management (management-only)
+# ---------------------------------------------------------------------------
+
+USERS_CSS = """
+.users-page { max-width: 900px; margin: 0 auto; padding: 2rem; }
+.users-page h1 { margin-bottom: 0.5rem; }
+.users-page .subtitle { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2rem; }
+.users-table-wrap {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+}
+.users-table { width: 100%; border-collapse: collapse; }
+.users-table th {
+    text-align: left; padding: 0.875rem 1rem;
+    font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-muted);
+    border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2);
+}
+.users-table td {
+    padding: 0.75rem 1rem; font-size: 0.875rem;
+    border-bottom: 1px solid var(--border); color: var(--text-secondary);
+}
+.users-table tr:last-child td { border-bottom: none; }
+.users-table select {
+    background: var(--bg-dark); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.35rem 0.5rem; color: white; font-size: 0.8125rem;
+}
+.btn-save {
+    background: var(--polly-primary); color: white; border: none;
+    border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.75rem;
+    cursor: pointer; font-weight: 500;
+}
+.btn-save:hover { opacity: 0.85; }
+.badge-role {
+    display: inline-block; padding: 0.2rem 0.625rem;
+    border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+}
+.role-management { background: rgba(245,158,11,0.12); color: var(--warning); }
+.role-sales { background: rgba(6,182,212,0.12); color: var(--polly-secondary); }
+.role-campaign { background: rgba(99,102,241,0.12); color: var(--polly-primary); }
+"""
+
+
+@rt("/users")
+def users_page(session, msg: str = "", msg_type: str = "success"):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if user.get("persona") != "management":
+        return RedirectResponse("/documents?msg=Only+management+can+manage+users&msg_type=error")
+
+    banner = [Div(msg, cls=f"msg-banner msg-{msg_type}")] if msg else []
+
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            rows = s.execute(text(
+                "SELECT id, email, full_name, persona, is_active, created_at "
+                "FROM polly.users ORDER BY created_at"
+            )).fetchall()
+            all_users = [dict(r._mapping) for r in rows]
+    except Exception:
+        all_users = []
+
+    roles = ["campaign", "sales", "management"]
+    role_cls = {"management": "role-management", "sales": "role-sales", "campaign": "role-campaign"}
+
+    rows_html = []
+    for u in all_users:
+        current_role = u.get("persona", "campaign")
+        is_self = str(u["id"]) == str(user.get("user_id"))
+
+        if is_self:
+            # Can't change your own role
+            role_cell = Span(current_role, cls=f"badge badge-role {role_cls.get(current_role, '')}")
+        else:
+            role_cell = Form(
+                Input(type="hidden", name="target_user_id", value=str(u["id"])),
+                Select(
+                    *[Option(r, value=r, selected=(r == current_role)) for r in roles],
+                    name="new_persona",
+                ),
+                Button("Save", cls="btn-save", type="submit"),
+                action="/users/update-role", method="post",
+                style="display:flex; gap:0.4rem; align-items:center;",
+            )
+
+        rows_html.append(Tr(
+            Td(u.get("full_name") or "—"),
+            Td(u.get("email", "")),
+            Td(role_cell),
+            Td("Active" if u.get("is_active") else "Inactive",
+               style=f"color: {'var(--success)' if u.get('is_active') else 'var(--error)'}"),
+        ))
+
+    return Html(
+        Head(
+            Title("User Management — POLLY"),
+            Style(BRAND_CSS + NAV_CSS + DOCS_CSS + USERS_CSS),
+        ),
+        Body(
+            Navbar(active="documents", user=user),
+            Div(
+                H1("User Management"),
+                P("Assign roles to control who can approve documents and manage the platform.",
+                  cls="subtitle"),
+                *banner,
+                Div(
+                    Table(
+                        Thead(Tr(Th("Name"), Th("Email"), Th("Role"), Th("Status"))),
+                        Tbody(*rows_html),
+                        cls="users-table",
+                    ),
+                    cls="users-table-wrap",
+                ),
+                P(
+                    A("← Back to Documents", href="/documents"),
+                    style="margin-top: 1.5rem; font-size: 0.875rem;",
+                ),
+                cls="users-page",
+            ),
+        ),
+    )
+
+
+@rt("/users/update-role")
+async def users_update_role(session, target_user_id: int = 0, new_persona: str = ""):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if user.get("persona") != "management":
+        return RedirectResponse("/documents?msg=Only+management+can+change+roles&msg_type=error",
+                                status_code=303)
+    if not target_user_id or new_persona not in ("campaign", "sales", "management"):
+        return RedirectResponse("/users?msg=Invalid+request&msg_type=error", status_code=303)
+    if str(target_user_id) == str(user.get("user_id")):
+        return RedirectResponse("/users?msg=Cannot+change+your+own+role&msg_type=error",
+                                status_code=303)
+
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            s.execute(text(
+                "UPDATE polly.users SET persona = :persona WHERE id = :uid"
+            ), {"persona": new_persona, "uid": target_user_id})
+        return RedirectResponse(f"/users?msg=Role+updated+to+{new_persona}", status_code=303)
+    except Exception as e:
+        return RedirectResponse(f"/users?msg=Error:+{str(e)[:80]}&msg_type=error",
                                 status_code=303)
 
 
