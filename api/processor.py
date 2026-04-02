@@ -168,13 +168,27 @@ async def process(msg: ChannelMessage) -> ChannelResponse:
         result = await agent.execute(tool_name, parsed.args, rt.context)
         elapsed = time.monotonic() - t0
 
+        # Attach RAG source documents if available
+        response_data = result.data or {}
+        rag = rt.context.get_integration("rag")
+        if rag and parsed.agent in ("content", "compliance"):
+            try:
+                sources = rag.retrieve(
+                    query=msg.text,
+                    product_id=msg.product_id,
+                    top_k=4,
+                )
+                response_data["sources"] = sources
+            except Exception:
+                pass
+
         resp = ChannelResponse(
             source=msg.source, sender_id=msg.sender_id,
             session_id=msg.session_id,
             agent=parsed.agent, tool=tool_name,
             text=result.output or result.error or "",
             status=result.status.value,
-            data=result.data or {},
+            data=response_data,
             elapsed_seconds=round(elapsed, 2),
         )
 
@@ -196,7 +210,12 @@ async def process(msg: ChannelMessage) -> ChannelResponse:
 
 async def _handle_freetext(msg: ChannelMessage, rt: _Runtime,
                            t0: float) -> ChannelResponse:
-    """Handle free-text messages that aren't agent:tool commands."""
+    """
+    Handle free-text messages that aren't agent:tool commands.
+
+    Uses RAG to retrieve relevant documents, queries DB for product info,
+    and answers any natural language question with full context.
+    """
     xai = rt.context.get_integration("xai")
     if not xai:
         return ChannelResponse(
@@ -206,7 +225,58 @@ async def _handle_freetext(msg: ChannelMessage, rt: _Runtime,
             elapsed_seconds=round(time.monotonic() - t0, 2),
         )
 
-    # Build agent list for context
+    # 1. RAG retrieval -- pull relevant document sections
+    rag = rt.context.get_integration("rag")
+    doc_context = ""
+    sources = []
+    if rag:
+        try:
+            sources = rag.retrieve(query=msg.text, top_k=6)
+            if sources:
+                doc_sections = []
+                for s in sources[:6]:
+                    doc_sections.append(
+                        f"[{s.get('filename', '?')} | {s.get('section_name', '')}]\n"
+                        f"{s.get('content', '')[:600]}"
+                    )
+                doc_context = (
+                    "\n\n--- RETRIEVED DOCUMENTS ---\n"
+                    + "\n\n".join(doc_sections)
+                    + "\n--- END DOCUMENTS ---\n"
+                )
+        except Exception:
+            pass
+
+    # 2. DB context -- product and document counts
+    db_context = ""
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            products = s.execute(text(
+                "SELECT id, name, product_type, jurisdiction, status "
+                "FROM polly.products ORDER BY id"
+            )).fetchall()
+            doc_count = s.execute(text(
+                "SELECT COUNT(*) FROM polly_rag_hierarchical.documents"
+            )).scalar()
+            approved_count = s.execute(text(
+                "SELECT COUNT(*) FROM polly_rag_hierarchical.documents WHERE approved = true"
+            )).scalar()
+
+            if products:
+                prod_lines = [f"  - {r[1]} (id={r[0]}, type={r[2]}, jurisdiction={r[3]}, status={r[4]})"
+                              for r in products]
+                db_context = (
+                    f"\n\nProducts in database ({len(products)}):\n"
+                    + "\n".join(prod_lines)
+                    + f"\n\nDocuments: {doc_count} total, {approved_count} approved"
+                )
+    except Exception:
+        pass
+
+    # 3. Build agent list for context
     agents_info = []
     for a in rt.registry.all_agents():
         tools = ", ".join(t.name for t in a.get_tools())
@@ -215,21 +285,32 @@ async def _handle_freetext(msg: ChannelMessage, rt: _Runtime,
 
     system = (
         "You are POLLY, an AI marketing assistant for financial advisors. "
-        "You help create compliant marketing content for financial products.\n\n"
-        "Available agents and tools:\n"
-        f"{agents_block}\n\n"
-        "If the user's message maps to a specific agent:tool, suggest the exact command.\n"
-        "For general questions, answer helpfully and concisely.\n"
-        "Always mention compliance and regulatory requirements when relevant."
+        "You help create compliant marketing content for structured financial products.\n\n"
+        "You have access to product documents via RAG and a database of products.\n"
+        "Answer the user's question using the retrieved documents and database info below.\n"
+        "If the question is about creating content, generating materials, or running a tool, "
+        "answer directly AND suggest the exact agent:tool command they can use.\n"
+        "Be specific, use facts from the documents, and be concise.\n\n"
+        f"Available agents and tools:\n{agents_block}\n"
+        f"{db_context}\n"
+        f"{doc_context}\n"
     )
 
     try:
-        response_text = await xai.generate(system=system, user=msg.text)
+        response_text = await xai.generate(
+            system=system, user=msg.text, max_tokens=2000
+        )
         elapsed = time.monotonic() - t0
+
+        response_data = {}
+        if sources:
+            response_data["sources"] = sources
+
         resp = ChannelResponse(
             source=msg.source, sender_id=msg.sender_id,
             session_id=msg.session_id,
             text=response_text, status="success",
+            data=response_data,
             elapsed_seconds=round(elapsed, 2),
         )
         _persist_message(msg, direction="outbound", response_text=resp.text)
