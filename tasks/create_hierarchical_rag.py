@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-POLLY Hierarchical RAG Indexer — upgrades simple flat chunks to section-aware chunks.
+POLLY Hierarchical RAG Indexer -- upgrades simple flat chunks to section-aware chunks.
 
 Writes into the same polly_rag.documents and polly_rag.chunks tables using the
 new columns added in sql/004_hierarchical_rag_schema.sql.
@@ -22,12 +22,12 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / ".env")
 
-# Reuse extraction + embedding from the existing pipeline — no duplication
+# Reuse extraction + embedding from the existing pipeline -- no duplication
 from tasks.create_rag import DocumentProcessor, EmbeddingService
 
 
 # ---------------------------------------------------------------------------
-# Hierarchical chunker — section-aware, produces parent + child pairs
+# Hierarchical chunker -- section-aware, produces parent + child pairs
 # ---------------------------------------------------------------------------
 
 class HierarchicalChunker:
@@ -36,9 +36,9 @@ class HierarchicalChunker:
     small child chunks within each section for precise vector matching.
 
     Each chunk carries:
-      content        — small text for embedding (150-400 chars)
-      section_name   — heading of the section it belongs to
-      parent_section — full section text returned to the LLM for context
+      content        -- small text for embedding (150-400 chars)
+      section_name   -- heading of the section it belongs to
+      parent_section -- full section text returned to the LLM for context
     """
 
     # Headings we treat as section boundaries
@@ -66,7 +66,7 @@ class HierarchicalChunker:
         matches = list(self.HEADING_RE.finditer(text))
 
         if not matches:
-            # No headings found — treat whole text as one section
+            # No headings found -- treat whole text as one section
             return [{"heading": "Document", "content": text.strip()}]
 
         sections = []
@@ -173,9 +173,9 @@ class HierarchicalRAGIndexer:
         embeddings = self.embedder.embed([c["content"] for c in chunks])
         print(f"    Embedded: {len(embeddings)} vectors")
 
-        # 4. Store — upsert into existing tables using new columns
+        # 4. Store -- upsert into existing tables using new columns
         with self.pool.get_session() as session:
-            # Upsert document row — uses existing UNIQUE(filename) constraint
+            # Upsert document row -- uses existing UNIQUE(filename) constraint
             result = session.execute(
                 text("""
                     INSERT INTO polly_rag_hierarchical.documents
@@ -255,18 +255,96 @@ class HierarchicalRAGIndexer:
         }
 
 
+DOC_TYPE_CHOICES = [
+    "product_description", "prospectus", "term_sheet", "priips",
+    "mifid_disclosures", "faq", "teaser", "pitch_deck",
+    "terms_conditions", "market_research",
+]
+
+JURISDICTION_CHOICES = ["UK", "EU", "US", "APAC"]
+
+
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Hierarchical RAG indexer")
-    parser.add_argument("--doc-dir",    default=str(ROOT / "doc-data"))
-    parser.add_argument("--product-id", type=int, default=None,
-                        help="polly.products.id to link documents to")
-    parser.add_argument("--doc-type",   default=None,
-                        help="Document type: prospectus, term_sheet, priips, etc.")
-    parser.add_argument("--jurisdiction", default="UK")
-    parser.add_argument("--approved",   action="store_true",
-                        help="Mark chunks as approved (management only)")
+
+    parser = argparse.ArgumentParser(
+        description="POLLY Hierarchical RAG Indexer -- process documents into "
+                    "section-aware vector chunks for product-scoped retrieval.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+examples:
+  # Index all docs in doc-data/ (no product link, not approved)
+  python tasks/create_hierarchical_rag.py
+
+  # Index for a specific product and doc type
+  python tasks/create_hierarchical_rag.py --product-id 1 --doc-type term_sheet
+
+  # Index and mark as approved (skip web approval step)
+  python tasks/create_hierarchical_rag.py --product-id 1 --doc-type prospectus --approved
+
+  # Index from custom directory with EU jurisdiction
+  python tasks/create_hierarchical_rag.py --doc-dir /data/docs --jurisdiction EU
+
+  # List valid doc types
+  python tasks/create_hierarchical_rag.py --list-types
+
+doc types:
+  product_description   Product overview / marketing summary
+  prospectus            Offering document / listing particulars
+  term_sheet            Final terms / term sheet
+  priips                PRIIPs KID / key information document
+  mifid_disclosures     MiFID II disclosure documents
+  faq                   Frequently asked questions
+  teaser                Short marketing teaser
+  pitch_deck            Investor pitch deck (PPTX/PDF)
+  terms_conditions      Terms & conditions
+  market_research       Market research / analysis
+
+workflow:
+  1. Upload docs via CLI (this script) or web UI (/documents)
+  2. Documents start as approved=false (pending)
+  3. Management user approves via web UI (/documents -> Approve)
+  4. RAG starts serving approved docs to content agents
+  5. Use --approved flag to skip step 2-3 (e.g. for initial bulk load)
+""",
+    )
+
+    parser.add_argument(
+        "--doc-dir", default=str(ROOT / "doc-data"),
+        help="Directory containing PDF/DOCX/PPTX files (default: doc-data/)",
+    )
+    parser.add_argument(
+        "--product-id", type=int, default=None,
+        help="Link documents to a product (polly.products.id). "
+             "Required for RAG filtering by product in agents.",
+    )
+    parser.add_argument(
+        "--doc-type", default=None, choices=DOC_TYPE_CHOICES,
+        help="Document type -- controls which agents retrieve this doc. "
+             "Use --list-types to see all options.",
+    )
+    parser.add_argument(
+        "--jurisdiction", default="UK", choices=JURISDICTION_CHOICES,
+        help="Regulatory jurisdiction (default: UK)",
+    )
+    parser.add_argument(
+        "--approved", action="store_true",
+        help="Mark documents as approved immediately. Without this flag, "
+             "docs start as pending and must be approved via web UI by a "
+             "management user before RAG serves them.",
+    )
+    parser.add_argument(
+        "--list-types", action="store_true",
+        help="Print valid doc types and exit",
+    )
     args = parser.parse_args()
+
+    if args.list_types:
+        print("Valid document types:")
+        for dt in DOC_TYPE_CHOICES:
+            print(f"  {dt}")
+        print(f"\nValid jurisdictions: {', '.join(JURISDICTION_CHOICES)}")
+        sys.exit(0)
 
     doc_dir = Path(args.doc_dir)
     if not doc_dir.exists():
