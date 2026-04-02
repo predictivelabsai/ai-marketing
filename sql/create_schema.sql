@@ -1,7 +1,6 @@
 -- POLLY Schema — Financial Product Marketing Database
--- Database: finespresso_db
 -- Schema: polly
--- Usage: psql -h 72.62.114.124 -U finespresso -d finespresso_db -f sql/create_schema.sql
+-- Usage: psql $DB_URL -f sql/create_schema.sql
 
 -- =============================================================================
 -- Schema creation

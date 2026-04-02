@@ -1,5 +1,5 @@
 -- POLLY Prompt Management — stores editable system prompts per user per agent
--- Run: PGPASSWORD=mlfpass2026 psql -h 72.62.114.124 -U finespresso -d finespresso_db -f sql/002_add_prompts.sql
+-- Run: psql $DB_URL -f sql/002_add_prompts.sql
 
 CREATE TABLE IF NOT EXISTS polly.prompts (
     id          SERIAL PRIMARY KEY,

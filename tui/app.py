@@ -99,11 +99,13 @@ class PollyApp:
         from integrations.arcade_int import ArcadeIntegration
         from integrations.playwright_int import PlaywrightIntegration
         from integrations.composio_int import ComposioIntegration
+        from integrations.rag_int import RagIntegration
 
         xai = XaiIntegration()
         arcade = ArcadeIntegration()
         playwright = PlaywrightIntegration()
         composio = ComposioIntegration()
+        rag = RagIntegration()
 
         if xai.is_configured():
             self.context.set_integration("xai", xai)
@@ -113,6 +115,8 @@ class PollyApp:
             self.context.set_integration("playwright", playwright)
         if composio.is_configured():
             self.context.set_integration("composio", composio)
+        if rag.is_configured():
+            self.context.set_integration("rag", rag)
 
     def _register_agents(self) -> None:
         """Register all agent implementations."""

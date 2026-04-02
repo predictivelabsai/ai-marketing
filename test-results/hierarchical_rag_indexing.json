@@ -1,0 +1,49 @@
+{
+  "documents": [
+    {
+      "filename": "Listing Particulars_Sustainable Capital 2024.04.03 (2).pdf",
+      "doc_id": 1,
+      "chunk_count": 1255,
+      "elapsed_seconds": 542.2
+    },
+    {
+      "filename": "V4_XTCC_Pitchdeck_Updated_03-07-2024.pptx",
+      "doc_id": 2,
+      "chunk_count": 74,
+      "elapsed_seconds": 32.0
+    },
+    {
+      "filename": "XTCC 2023-F6 USD 4Yr Solar Term Sheet FINAL.pdf",
+      "doc_id": 3,
+      "chunk_count": 126,
+      "elapsed_seconds": 46.8
+    },
+    {
+      "filename": "XTCC 4Y Principal Protected Detailed Overview and FAQ..docx",
+      "doc_id": 4,
+      "chunk_count": 54,
+      "elapsed_seconds": 16.1
+    },
+    {
+      "filename": "XTCC GBP 4Yr Solar IM 100 PP .pdf",
+      "doc_id": 5,
+      "chunk_count": 298,
+      "elapsed_seconds": 191.3
+    },
+    {
+      "filename": "XTCC OVERVIEW.pptx",
+      "doc_id": 6,
+      "chunk_count": 21,
+      "elapsed_seconds": 5.8
+    },
+    {
+      "filename": "XTCC_1pp_Flier_v7 (1).pdf",
+      "doc_id": 7,
+      "chunk_count": 10,
+      "elapsed_seconds": 4.5
+    }
+  ],
+  "total_chunks": 1838,
+  "total_files": 7,
+  "timestamp": "2026-04-01T16:22:17Z"
+}
