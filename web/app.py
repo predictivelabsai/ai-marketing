@@ -164,6 +164,7 @@ def Navbar(active="", user=None):
         A("Chat", href="/chat", cls="active" if active == "chat" else ""),
     ]
     if user:
+        links.append(A("Documents", href="/documents", cls="active" if active == "documents" else ""))
         links.append(A("Instructions", href="/instructions", cls="active" if active == "instructions" else ""))
         links.append(A(user.get("display_name", "Profile"), href="/profile", cls="nav-user"))
         links.append(A("Logout", href="/logout"))
@@ -2594,6 +2595,470 @@ def guide(session):
             ),
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# Document Management (upload, list, approve, delete)
+# ---------------------------------------------------------------------------
+
+DOC_TYPES = [
+    ("product_description", "Product Description"),
+    ("prospectus", "Prospectus / Offering Document"),
+    ("term_sheet", "Term Sheet / Final Terms"),
+    ("priips", "PRIIPs / KID"),
+    ("mifid_disclosures", "MiFID Disclosures"),
+    ("faq", "FAQ"),
+    ("teaser", "Teaser"),
+    ("pitch_deck", "Pitch Deck"),
+    ("terms_conditions", "Terms & Conditions"),
+    ("market_research", "Market Research"),
+]
+
+DOCS_CSS = """
+.docs-page { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+.docs-page h1 { margin-bottom: 0.5rem; }
+.docs-page .subtitle { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 2rem; }
+
+/* Upload form */
+.upload-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem; margin-bottom: 2rem;
+}
+.upload-card h2 { font-size: 1.25rem; margin-bottom: 1.5rem; }
+.form-row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
+.form-group label {
+    font-size: 0.8125rem; color: var(--text-secondary);
+    margin-bottom: 0.375rem; font-weight: 500;
+}
+.form-group select, .form-group input[type="text"] {
+    background: var(--bg-dark); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.625rem 0.75rem; color: white;
+    font-size: 0.875rem;
+}
+.form-group select:focus, .form-group input[type="text"]:focus {
+    outline: none; border-color: var(--polly-primary);
+}
+.drop-zone {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 2.5rem; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 1rem;
+}
+.drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--polly-primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+.drop-zone .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.drop-zone .label { color: var(--text-secondary); font-size: 0.875rem; }
+.drop-zone .label strong { color: var(--polly-primary); }
+.drop-zone input[type="file"] { display: none; }
+.btn-upload {
+    background: linear-gradient(135deg, var(--polly-primary), var(--polly-secondary));
+    color: white; border: none; border-radius: 8px;
+    padding: 0.75rem 2rem; font-size: 0.9375rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s;
+}
+.btn-upload:hover { opacity: 0.9; }
+.btn-upload:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Document table */
+.docs-table-wrap {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+}
+.docs-table {
+    width: 100%; border-collapse: collapse;
+}
+.docs-table th {
+    text-align: left; padding: 0.875rem 1rem;
+    font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+}
+.docs-table td {
+    padding: 0.75rem 1rem; font-size: 0.875rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+.docs-table tr:last-child td { border-bottom: none; }
+.docs-table tr:hover { background: rgba(99, 102, 241, 0.04); }
+.badge {
+    display: inline-block; padding: 0.2rem 0.625rem;
+    border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-approved { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+.badge-pending  { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+.badge-type {
+    background: rgba(99, 102, 241, 0.12); color: var(--polly-primary);
+}
+.btn-sm {
+    padding: 0.3rem 0.75rem; border-radius: 6px; font-size: 0.75rem;
+    border: none; cursor: pointer; font-weight: 500; transition: opacity 0.2s;
+}
+.btn-approve { background: var(--success); color: white; }
+.btn-reject  { background: var(--warning); color: #000; }
+.btn-delete  { background: var(--error); color: white; }
+.btn-sm:hover { opacity: 0.85; }
+.actions-cell { display: flex; gap: 0.4rem; }
+.empty-state {
+    text-align: center; padding: 3rem; color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+.msg-banner {
+    padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+}
+.msg-success { background: rgba(16,185,129,0.12); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
+.msg-error   { background: rgba(239,68,68,0.12); color: var(--error); border: 1px solid rgba(239,68,68,0.25); }
+.processing-info {
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;
+    font-size: 0.8125rem; color: var(--text-secondary);
+}
+"""
+
+
+def _get_products():
+    """Fetch products from DB for the upload dropdown."""
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            rows = s.execute(text(
+                "SELECT id, name FROM polly.products ORDER BY name"
+            )).fetchall()
+            return [(r[0], r[1]) for r in rows]
+    except Exception:
+        return []
+
+
+def _get_documents(product_id=None, status=None):
+    """Fetch documents from polly_rag_hierarchical.documents."""
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            q = """
+                SELECT d.id, d.filename, d.file_type, d.doc_type,
+                       d.chunk_count, d.approved, d.approved_by, d.approved_at,
+                       d.jurisdiction, d.processed_at,
+                       p.name AS product_name, d.product_id
+                FROM polly_rag_hierarchical.documents d
+                LEFT JOIN polly.products p ON p.id = d.product_id
+                ORDER BY d.processed_at DESC
+            """
+            rows = s.execute(text(q)).fetchall()
+            return [dict(r._mapping) for r in rows]
+    except Exception as e:
+        print(f"Error fetching documents: {e}")
+        return []
+
+
+@rt("/documents")
+def documents(session, msg: str = "", msg_type: str = "success"):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    is_management = user.get("persona") == "management"
+    docs = _get_documents()
+
+    # Banner message (after upload/approve/delete)
+    banner = []
+    if msg:
+        banner = [Div(msg, cls=f"msg-banner msg-{msg_type}")]
+
+    # Build table rows
+    if docs:
+        rows = []
+        for d in docs:
+            status_badge = Span(
+                "Approved" if d["approved"] else "Pending",
+                cls=f"badge badge-{'approved' if d['approved'] else 'pending'}",
+            )
+            type_badge = Span(
+                d.get("doc_type") or "—",
+                cls="badge badge-type",
+            ) if d.get("doc_type") else "—"
+
+            actions = []
+            if is_management and not d["approved"]:
+                actions.append(
+                    Form(
+                        Input(type="hidden", name="doc_id", value=str(d["id"])),
+                        Button("Approve", cls="btn-sm btn-approve", type="submit"),
+                        action="/documents/approve", method="post",
+                        style="display:inline",
+                    )
+                )
+            if is_management:
+                actions.append(
+                    Form(
+                        Input(type="hidden", name="doc_id", value=str(d["id"])),
+                        Button("Delete", cls="btn-sm btn-delete", type="submit"),
+                        action="/documents/delete", method="post",
+                        style="display:inline",
+                        onsubmit="return confirm('Delete this document and all its chunks?')",
+                    )
+                )
+
+            rows.append(Tr(
+                Td(d["filename"][:45] + ("…" if len(d["filename"]) > 45 else ""),
+                   title=d["filename"]),
+                Td(type_badge),
+                Td(d.get("product_name") or "—"),
+                Td(str(d.get("chunk_count") or 0)),
+                Td(d.get("jurisdiction") or "—"),
+                Td(status_badge),
+                Td(Div(*actions, cls="actions-cell") if actions else "—"),
+            ))
+
+        table = Div(
+            Table(
+                Thead(Tr(
+                    Th("Filename"), Th("Type"), Th("Product"),
+                    Th("Chunks"), Th("Jurisdiction"), Th("Status"), Th("Actions"),
+                )),
+                Tbody(*rows),
+                cls="docs-table",
+            ),
+            cls="docs-table-wrap",
+        )
+    else:
+        table = Div(
+            P("No documents yet. Upload your first document above."),
+            cls="empty-state",
+        )
+
+    return Html(
+        Head(
+            Title("Documents — POLLY"),
+            Style(BRAND_CSS + NAV_CSS + DOCS_CSS),
+        ),
+        Body(
+            Navbar(active="documents", user=user),
+            Div(
+                H1("Document Management"),
+                P("Upload, review, and approve compliance documents for RAG-powered content generation.",
+                  cls="subtitle"),
+                *banner,
+
+                # Upload card (always visible)
+                _upload_form(user),
+
+                # Role info
+                Div(
+                    f"Logged in as: {user.get('display_name', '')} "
+                    f"({user.get('persona', 'campaign')})"
+                    + (" — you can approve and delete documents" if is_management else ""),
+                    cls="processing-info",
+                ),
+
+                # Documents table
+                H2(f"Documents ({len(docs)})", style="margin: 1.5rem 0 1rem;"),
+                table,
+                cls="docs-page",
+            ),
+        ),
+    )
+
+
+def _upload_form(user):
+    """Build the upload form card."""
+    products = _get_products()
+    product_options = [Option("— No product —", value="")] + [
+        Option(name, value=str(pid)) for pid, name in products
+    ]
+    doc_type_options = [Option("— Select type —", value="")] + [
+        Option(label, value=val) for val, label in DOC_TYPES
+    ]
+    jurisdiction_options = [
+        Option(j, value=j) for j in ["UK", "EU", "US", "APAC"]
+    ]
+
+    return Div(
+        H2("Upload Document"),
+        Form(
+            Div(
+                Div(
+                    Label("Product", fr="product_id"),
+                    Select(*product_options, name="product_id", id="product_id"),
+                    cls="form-group",
+                ),
+                Div(
+                    Label("Document Type", fr="doc_type"),
+                    Select(*doc_type_options, name="doc_type", id="doc_type"),
+                    cls="form-group",
+                ),
+                Div(
+                    Label("Jurisdiction", fr="jurisdiction"),
+                    Select(*jurisdiction_options, name="jurisdiction", id="jurisdiction"),
+                    cls="form-group",
+                ),
+                cls="form-row",
+            ),
+            Div(
+                Div(
+                    Div("📄", cls="icon"),
+                    Div(
+                        Strong("Click to select"), " or drag & drop",
+                        Br(),
+                        "PDF, DOCX, or PPTX (max 50 MB)",
+                        cls="label",
+                    ),
+                    Input(type="file", name="file", id="file-input",
+                          accept=".pdf,.docx,.pptx"),
+                    cls="drop-zone",
+                    id="drop-zone",
+                    onclick="document.getElementById('file-input').click()",
+                ),
+            ),
+            Button("Upload & Process", cls="btn-upload", type="submit"),
+            action="/upload", method="post", enctype="multipart/form-data",
+        ),
+        # Drag-and-drop JS
+        Script("""
+            const dz = document.getElementById('drop-zone');
+            const fi = document.getElementById('file-input');
+            if (dz) {
+                dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+                dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+                dz.addEventListener('drop', e => {
+                    e.preventDefault(); dz.classList.remove('dragover');
+                    if (e.dataTransfer.files.length) {
+                        fi.files = e.dataTransfer.files;
+                        dz.querySelector('.label').innerHTML = '<strong>' + e.dataTransfer.files[0].name + '</strong>';
+                    }
+                });
+                fi.addEventListener('change', () => {
+                    if (fi.files.length) {
+                        dz.querySelector('.label').innerHTML = '<strong>' + fi.files[0].name + '</strong>';
+                    }
+                });
+            }
+        """),
+        cls="upload-card",
+    )
+
+
+@rt("/upload")
+async def upload_post(session, file, product_id: str = "", doc_type: str = "",
+                      jurisdiction: str = "UK"):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+
+    # Validate file
+    if not file or not hasattr(file, "filename") or not file.filename:
+        return RedirectResponse("/documents?msg=No+file+selected&msg_type=error")
+
+    fname = file.filename
+    suffix = Path(fname).suffix.lower()
+    if suffix not in (".pdf", ".docx", ".pptx"):
+        return RedirectResponse(
+            "/documents?msg=Unsupported+file+type.+Use+PDF,+DOCX,+or+PPTX&msg_type=error"
+        )
+
+    # Save to temp file, then process
+    upload_dir = ROOT / "uploads"
+    upload_dir.mkdir(exist_ok=True)
+    dest = upload_dir / fname
+
+    content = await file.read()
+    dest.write_bytes(content)
+
+    # Process via HierarchicalRAGIndexer (single file)
+    try:
+        from tasks.create_hierarchical_rag import HierarchicalRAGIndexer
+        pid = int(product_id) if product_id else None
+        dtype = doc_type if doc_type else None
+
+        indexer = HierarchicalRAGIndexer(
+            doc_dir=upload_dir,  # not used for single file
+            product_id=pid,
+            doc_type=dtype,
+            jurisdiction=jurisdiction,
+            approved=False,  # always starts pending
+        )
+        stats = indexer.process_document(dest)
+        chunk_count = stats.get("chunk_count", 0)
+        msg = f"Uploaded+{fname}:+{chunk_count}+chunks+created.+Awaiting+approval."
+        return RedirectResponse(f"/documents?msg={msg}", status_code=303)
+    except Exception as e:
+        msg = f"Error+processing+{fname}:+{str(e)[:100]}"
+        return RedirectResponse(f"/documents?msg={msg}&msg_type=error", status_code=303)
+    finally:
+        # Clean up temp file
+        if dest.exists():
+            dest.unlink()
+
+
+@rt("/documents/approve")
+async def documents_approve(session, doc_id: int = 0):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if user.get("persona") != "management":
+        return RedirectResponse("/documents?msg=Only+management+can+approve&msg_type=error",
+                                status_code=303)
+    if not doc_id:
+        return RedirectResponse("/documents?msg=Invalid+document&msg_type=error", status_code=303)
+
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            # Approve the document
+            s.execute(text("""
+                UPDATE polly_rag_hierarchical.documents
+                SET approved = TRUE, approved_by = :uid, approved_at = NOW()
+                WHERE id = :doc_id
+            """), {"doc_id": doc_id, "uid": int(user.get("user_id", 0))})
+            # Propagate to chunks
+            s.execute(text("""
+                UPDATE polly_rag_hierarchical.chunks
+                SET approved = TRUE
+                WHERE document_id = :doc_id
+            """), {"doc_id": doc_id})
+        return RedirectResponse("/documents?msg=Document+approved.+RAG+will+now+use+it.",
+                                status_code=303)
+    except Exception as e:
+        return RedirectResponse(f"/documents?msg=Error:+{str(e)[:80]}&msg_type=error",
+                                status_code=303)
+
+
+@rt("/documents/delete")
+async def documents_delete(session, doc_id: int = 0):
+    user = session.get("user")
+    if not user:
+        return RedirectResponse("/signin")
+    if user.get("persona") != "management":
+        return RedirectResponse("/documents?msg=Only+management+can+delete&msg_type=error",
+                                status_code=303)
+    if not doc_id:
+        return RedirectResponse("/documents?msg=Invalid+document&msg_type=error", status_code=303)
+
+    try:
+        from utils.db_pool import DatabasePool
+        from sqlalchemy import text
+        pool = DatabasePool.get()
+        with pool.get_session() as s:
+            # Delete chunks first (FK constraint)
+            s.execute(text(
+                "DELETE FROM polly_rag_hierarchical.chunks WHERE document_id = :doc_id"
+            ), {"doc_id": doc_id})
+            s.execute(text(
+                "DELETE FROM polly_rag_hierarchical.documents WHERE id = :doc_id"
+            ), {"doc_id": doc_id})
+        return RedirectResponse("/documents?msg=Document+deleted.", status_code=303)
+    except Exception as e:
+        return RedirectResponse(f"/documents?msg=Error:+{str(e)[:80]}&msg_type=error",
+                                status_code=303)
 
 
 # ---------------------------------------------------------------------------
