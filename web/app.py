@@ -1273,25 +1273,27 @@ function sendMessage() {
     if (!text) return;
     addMessage('user', text);
     input.value = '';
-    setTimeout(() => {
-        showTyping();
-        setTimeout(() => {
-            hideTyping();
-            const lower = text.toLowerCase();
-            if (lower.includes('campaign') || lower.includes('follow up')) {
-                addCampaignCard({ title: 'Smart Follow-Up', segment: '150 high-intent contacts',
-                    variants: [{ type: 'Personalized', text: "Hey [Name], noticed you checked out [Product]. Quick question: what's your biggest priority this quarter?", predicted: '25% reply rate' }] });
-            } else if (lower.includes('best customer') || lower.includes('top') || lower.includes('warm')) {
-                addInsightCard({ title: 'Customer Intelligence',
-                    insights: [{ name: 'Sarah Chen', value: '$24,500 LTV' },{ name: 'Mike Ross', value: '18 referrals' },{ name: 'Emma Davis', value: 'Fastest responder' }],
-                    pattern: 'Top customers engage within 2 hours of campaign send' });
-            } else if (lower.includes('performance') || lower.includes('how did') || lower.includes('comparison') || lower.includes('compare')) {
-                addMessage('polly', 'Recent performance snapshot:\\n\\n📊 Last 7 days:\\n• 3 campaigns sent\\n• 1,247 people reached\\n• 234 responses (18.8%)\\n• 47 meetings booked\\n• $12,400 attributed revenue\\n\\nTop channel: WhatsApp (72% open rate)\\nBest time: Tuesday 10 AM');
-            } else {
-                addMessage('polly', "I can help with that! Here are some things I can do:\\n\\n• Create campaigns with AI-generated copy\\n• Find and rank your best leads\\n• Track responses across all channels\\n• Analyze what's working (and what's not)\\n• Suggest next best actions\\n\\nWhat would you like to focus on?");
-            }
-        }, 2000);
-    }, 500);
+    showTyping();
+
+    var apiBase = window.POLLY_API_URL || (window.location.protocol + '//' + window.location.hostname + ':5056');
+    fetch(apiBase + '/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: text, session_id: null, product_id: null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        hideTyping();
+        var reply = data.text || 'No response received.';
+        if (data.agent && data.tool) {
+            reply = data.agent + ':' + data.tool + ' (' + (data.elapsed_seconds || 0) + 's)\\n\\n' + reply;
+        }
+        addMessage('polly', reply);
+    })
+    .catch(err => {
+        hideTyping();
+        addMessage('polly', 'Error connecting to API: ' + err.message);
+    });
 }
 
 function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
@@ -1457,6 +1459,7 @@ def get():
             ),
             # Toast container
             Div(id="toast-container", cls="toast-container"),
+            Script(f"window.POLLY_API_URL = '{os.environ.get('API_BASE_URL', '')}' || null;"),
             Script(DEMO_JS),
         ),
     )
@@ -1878,6 +1881,8 @@ function showTyping() {
 }
 function hideTyping() { var t = document.getElementById('typing'); if(t) t.remove(); }
 
+var _sessionId = '';
+
 function sendChat() {
     var inp = document.getElementById('chat-input');
     var text = inp.value.trim();
@@ -1885,28 +1890,35 @@ function sendChat() {
     addMsg('user', text);
     inp.value = '';
     inp.style.height = 'auto';
-    setTimeout(function() {
-        showTyping();
-        setTimeout(function() {
-            hideTyping();
-            var lower = text.toLowerCase();
-            if (lower.includes('campaign') || lower.includes('follow up') || lower.includes('launch')) {
-                addMsg('bot', "I can help with that campaign! Here's what I'll need:\\n\\n1. **Product** — which financial product?\\n2. **Audience** — target investor segment\\n3. **Channels** — email, WhatsApp, Telegram, LinkedIn?\\n4. **Timeline** — when to start?\\n\\nJust tell me the details and I'll draft a campaign brief with compliant copy.");
-            } else if (lower.includes('compliance') || lower.includes('review') || lower.includes('check')) {
-                addMsg('bot', "I'll review that for compliance. Send me the marketing content and I'll check it against:\\n\\n• MiFID II requirements\\n• FCA fair/clear/not misleading rules\\n• Required risk warnings\\n• Target market restrictions\\n\\nPaste the content and I'll flag any issues.");
-            } else if (lower.includes('teaser') || lower.includes('faq') || lower.includes('pitch') || lower.includes('content')) {
-                addMsg('bot', "I can generate that for you! To create compliant marketing materials, I'll use your approved product documents.\\n\\nAvailable formats:\\n• **Teaser** — one-pager with risk warnings\\n• **FAQ** — from prospectus/term sheet\\n• **Pitch Deck** — slide-by-slide content\\n• **Email Sequence** — nurture or launch series\\n\\nWhich product should I create this for?");
-            } else if (lower.includes('analytics') || lower.includes('performance') || lower.includes('report') || lower.includes('channel')) {
-                addMsg('bot', "Here's your latest campaign snapshot:\\n\\n📊 **Last 7 days:**\\n• 3 campaigns active\\n• 1,247 contacts reached\\n• 234 responses (18.8%)\\n• 47 meetings booked\\n\\n📱 **Top channel:** WhatsApp (72% open rate)\\n⏰ **Best send time:** Tuesday 10 AM\\n\\nWant me to drill into a specific campaign?");
-            } else if (lower.includes('seo') || lower.includes('audit') || lower.includes('search')) {
-                addMsg('bot', "I can help with SEO! Here's what I offer:\\n\\n🔍 **Technical Audit** — meta tags, headings, schema markup\\n🤖 **AI SEO** — optimize for AI search engines (AEO/LLMO)\\n📊 **Competitor Analysis** — compare your SEO vs competitors\\n🏗️ **Schema Markup** — generate JSON-LD structured data\\n\\nShare a URL or tell me what you need.");
-            } else if (lower.includes('lead') || lower.includes('contact') || lower.includes('crm')) {
-                addMsg('bot', "Lead management is key! I can help with:\\n\\n🎯 **Lead Scoring** — prioritize by engagement level\\n📋 **Lead Categorization** — hot, warm, questions, removal\\n🔄 **Automated Follow-up** — for non-responders\\n📤 **Sales Handoff** — qualified leads to your team\\n\\nWhich campaign's leads should we look at?");
-            } else {
-                addMsg('bot', "I can help with that! Here's what I do best:\\n\\n🚀 **Campaigns** — create, A/B test, automate follow-ups\\n🛡️ **Compliance** — review content, risk warnings, MiFID checks\\n📝 **Content** — teasers, FAQs, pitch decks, email sequences\\n📊 **Analytics** — cross-channel performance reports\\n📱 **Channels** — WhatsApp, Telegram, email, LinkedIn, X\\n🔍 **SEO** — audits, schema markup, AI search optimization\\n\\nJust tell me what you need!");
-            }
-        }, 1500);
-    }, 300);
+
+    showTyping();
+    var userId = document.body.getAttribute('data-user-id') || 'web-anonymous';
+
+    var apiBase = window.POLLY_API_URL || (window.location.protocol + '//' + window.location.hostname + ':5056');
+    fetch(apiBase + '/chat?user_id=' + encodeURIComponent(userId), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            message: text,
+            session_id: _sessionId || null,
+            product_id: null
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        hideTyping();
+        if (data.session_id) _sessionId = data.session_id;
+        var status = data.status || 'success';
+        var reply = data.text || 'No response received.';
+        if (data.agent && data.tool) {
+            reply = '**' + data.agent + ':' + data.tool + '** (' + (data.elapsed_seconds || 0) + 's)\\n\\n' + reply;
+        }
+        addMsg('bot', reply);
+    })
+    .catch(function(err) {
+        hideTyping();
+        addMsg('bot', 'Error: ' + err.message + '. Please try again.');
+    });
 }
 
 function handleChatKey(e) {
@@ -1943,7 +1955,7 @@ def chat(session):
         Body(
             Navbar(active="chat", user=user),
             Div(
-                # Starter section — 6 buttons, centered
+                # Starter section -- 6 buttons, centered
                 Div(
                     Div(
                         H1(f"Hi {display}, how can I help?"),
@@ -1989,7 +2001,9 @@ def chat(session):
                 ),
                 cls="chat-page",
             ),
+            Script(f"window.POLLY_API_URL = '{os.environ.get('API_BASE_URL', '')}' || null;"),
             Script(CHAT_JS),
+            data_user_id=user.get("user_id", ""),
         ),
     )
 
