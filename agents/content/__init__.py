@@ -165,24 +165,41 @@ class ContentAgent(BaseAgent):
         prompt_base = self._get_system_prompt(context)
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
+        # RAG: retrieve relevant document sections; fall back to in-memory compliance docs
+        rag = context.get_integration("rag")
+        _DOC_TYPES = {
+            "teaser":         ["product_description", "term_sheet", "teaser"],
+            "faq":            ["faq", "term_sheet", "product_description"],
+            "pitch-deck":     ["pitch_deck", "product_description", "term_sheet"],
+            "email-sequence": ["product_description", "term_sheet"],
+            "social-content": ["product_description", "teaser"],
+            "copywriting":    ["product_description"],
+        }
+        if rag and tool_name in _DOC_TYPES:
+            doc_context = rag.retrieve_as_prompt_block(
+                query=tool_name, doc_types=_DOC_TYPES[tool_name], top_k=5
+            )
+        else:
+            doc_context = context.compliance_docs.to_prompt_block()
+
         if tool_name == "copywriting":
-            return await self._copywriting(args, xai, product_block, prompt_base)
+            return await self._copywriting(args, xai, product_block, doc_context, prompt_base)
         elif tool_name == "copy-editing":
             return await self._copy_editing(args, xai, product_block, prompt_base)
         elif tool_name == "social-content":
-            return await self._social_content(args, xai, product_block, prompt_base)
+            return await self._social_content(args, xai, product_block, doc_context, prompt_base)
         elif tool_name == "email-sequence":
-            return await self._email_sequence(args, xai, product_block, prompt_base)
+            return await self._email_sequence(args, xai, product_block, doc_context, prompt_base)
         elif tool_name == "faq":
-            return await self._faq(args, xai, product_block, prompt_base)
+            return await self._faq(args, xai, product_block, doc_context, prompt_base)
         elif tool_name == "teaser":
-            return await self._teaser(args, xai, product_block, prompt_base)
+            return await self._teaser(args, xai, product_block, doc_context, prompt_base)
         elif tool_name == "pitch-deck":
-            return await self._pitch_deck(args, xai, product_block, prompt_base)
+            return await self._pitch_deck(args, xai, product_block, doc_context, prompt_base)
 
         return ToolResult(status=ToolStatus.ERROR, error=f"Unknown tool: {tool_name}")
 
-    async def _copywriting(self, args, xai, product_block, prompt_base) -> ToolResult:
+    async def _copywriting(self, args, xai, product_block, doc_context, prompt_base) -> ToolResult:
         topic = args["topic"]
         fmt = args.get("format", "paragraph")
         tone = args.get("tone", "professional")
@@ -190,6 +207,7 @@ class ContentAgent(BaseAgent):
 
         system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Generate {fmt} format marketing copy. Tone: {tone}. Target platform: {platform}."""
 
         user_prompt = f"Write marketing copy about: {topic}"
@@ -208,7 +226,7 @@ Provide the improved version followed by a brief explanation of changes."""
         output = await xai.generate(system, f"Improve this copy:\n\n{text}")
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _social_content(self, args, xai, product_block, prompt_base) -> ToolResult:
+    async def _social_content(self, args, xai, product_block, doc_context, prompt_base) -> ToolResult:
         topic = args["topic"]
         platform = args.get("platform", "x")
         tone = args.get("tone", "professional")
@@ -224,6 +242,7 @@ Provide the improved version followed by a brief explanation of changes."""
 
             system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Generate a {p.upper()} social media post. {constraint} Tone: {tone}.
 Include relevant hashtags."""
 
@@ -232,26 +251,28 @@ Include relevant hashtags."""
 
         return ToolResult(status=ToolStatus.SUCCESS, output="\n\n".join(outputs))
 
-    async def _email_sequence(self, args, xai, product_block, prompt_base) -> ToolResult:
+    async def _email_sequence(self, args, xai, product_block, doc_context, prompt_base) -> ToolResult:
         seq_type = args.get("type", "onboarding")
         topic = args.get("topic", seq_type)
         steps = args.get("steps", "5")
 
         system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Design a {steps}-step {seq_type} email sequence.
 For each email include: subject line, preview text, body copy, CTA, and recommended send timing."""
 
         output = await xai.generate(system, f"Create an email sequence for: {topic}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _faq(self, args, xai, product_block, prompt_base) -> ToolResult:
+    async def _faq(self, args, xai, product_block, doc_context, prompt_base) -> ToolResult:
         product = args.get("product", "the financial product")
         source = args.get("source", "all")
         count = args.get("count", "15")
 
         system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Generate {count} frequently asked questions and answers for: {product}
 Source documents: {source}
 
@@ -265,13 +286,14 @@ Guidelines:
         output = await xai.generate(system, f"Generate FAQ for: {product}", max_tokens=3000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _teaser(self, args, xai, product_block, prompt_base) -> ToolResult:
+    async def _teaser(self, args, xai, product_block, doc_context, prompt_base) -> ToolResult:
         product = args["product"]
         audience = args.get("audience", "qualified investors")
         fmt = args.get("format", "one-pager")
 
         system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Create a {fmt} product teaser for: {product}
 Target audience: {audience}
 
@@ -289,13 +311,14 @@ It must be fair, clear, and not misleading."""
         output = await xai.generate(system, f"Create teaser for: {product}", max_tokens=2000)
         return ToolResult(status=ToolStatus.SUCCESS, output=output)
 
-    async def _pitch_deck(self, args, xai, product_block, prompt_base) -> ToolResult:
+    async def _pitch_deck(self, args, xai, product_block, doc_context, prompt_base) -> ToolResult:
         product = args["product"]
         slides = args.get("slides", "10")
         audience = args.get("audience", "financial advisors")
 
         system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Create content for a {slides}-slide pitch deck for: {product}
 Target audience: {audience}
 

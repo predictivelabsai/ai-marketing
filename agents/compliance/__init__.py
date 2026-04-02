@@ -167,8 +167,19 @@ class ComplianceAgent(BaseAgent):
         jurisdiction = args.get("jurisdiction", "UK")
         product_block = context.product.to_prompt_block() if context.product.is_set() else ""
 
+        rag = context.get_integration("rag")
+        doc_context = (
+            rag.retrieve_as_prompt_block(
+                query=f"compliance {doc_type} risk warnings disclosures regulations",
+                doc_types=["term_sheet", "priips", "mifid_disclosures"],
+                top_k=4,
+            )
+            if rag else context.compliance_docs.to_prompt_block()
+        )
+
         system = f"""{prompt_base}
 {product_block}
+{doc_context}
 Review the following {doc_type} marketing content for compliance with {jurisdiction} financial regulations.
 
 Check for:

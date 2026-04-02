@@ -1,5 +1,5 @@
 -- POLLY RAG Schema — Document embeddings for retrieval-augmented generation
--- Run: PGPASSWORD=mlfpass2026 psql -h 72.62.114.124 -U finespresso -d finespresso_db -f sql/003_create_rag_schema.sql
+-- Run: psql $DB_URL -f sql/003_create_rag_schema.sql
 
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE SCHEMA IF NOT EXISTS polly_rag;
