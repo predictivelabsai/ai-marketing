@@ -151,14 +151,26 @@ async def telegram_setup_webhook():
 @api.get("/webhook/telegram/status")
 async def telegram_status():
     """Check Telegram bot info and webhook status."""
-    from api.channels.telegram import get_me, is_configured
+    import os
+    from api.channels.telegram import get_me, is_configured, _get_token
+
+    token = _get_token()
+    raw = os.getenv("TELEGRAM_BOT_TOKEN")
 
     if not is_configured():
-        return {"configured": False}
+        return {
+            "configured": False,
+            "raw_env": repr(raw),
+            "token_len": len(token) if token else 0,
+        }
 
     try:
         info = await get_me()
-        return {"configured": True, "bot": info.get("result", {})}
+        return {
+            "configured": True,
+            "token_prefix": token[:10] + "...",
+            "bot": info.get("result", {}),
+        }
     except Exception as e:
         return {"configured": True, "error": str(e)}
 
