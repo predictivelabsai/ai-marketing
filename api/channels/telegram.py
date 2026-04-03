@@ -5,8 +5,8 @@ Receives messages via webhook, processes through unified pipeline,
 sends response back via Telegram Bot API.
 
 Setup:
-  1. Create bot via @BotFather on Telegram -> get BOT_TOKEN
-  2. Set env vars: TELEGRAM_BOT_TOKEN
+  1. Create bot via @BotFather on Telegram -> get _get_token()
+  2. Set env vars: TELEGRAM__get_token()
   3. Set webhook: POST https://api.telegram.org/bot<TOKEN>/setWebhook
      Body: {"url": "https://your-domain.com/webhook/telegram"}
 """
@@ -20,12 +20,16 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+def _get_token() -> str:
+    return os.getenv("TELEGRAM__get_token()", "").strip()
+
+
+def _get_api_url() -> str:
+    return f"https://api.telegram.org/bot{_get_token()}"
 
 
 def is_configured() -> bool:
-    return bool(BOT_TOKEN)
+    return bool(_get_token())
 
 
 def parse_update(payload: dict) -> dict | None:
@@ -55,9 +59,12 @@ def parse_update(payload: dict) -> dict | None:
 
 async def send_message(chat_id: str, text: str) -> bool:
     """Send a text message back to a Telegram chat."""
-    if not BOT_TOKEN:
+    token = _get_token()
+    if not token:
         logger.warning("TELEGRAM_BOT_TOKEN not set, cannot send message")
         return False
+    logger.info("Sending to chat_id=%s, token=%s..., url=%s",
+                chat_id, token[:10], _get_api_url()[:50])
 
     # Telegram max message length is 4096 chars
     chunks = [text[i:i + 4096] for i in range(0, len(text), 4096)]
@@ -65,7 +72,7 @@ async def send_message(chat_id: str, text: str) -> bool:
     async with httpx.AsyncClient(timeout=30) as client:
         for chunk in chunks:
             resp = await client.post(
-                f"{TELEGRAM_API}/sendMessage",
+                f"{_get_api_url()}/sendMessage",
                 json={
                     "chat_id": chat_id,
                     "text": chunk,
@@ -83,7 +90,7 @@ async def set_webhook(webhook_url: str) -> dict:
     """Set the Telegram webhook URL. Call once during deployment."""
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.post(
-            f"{TELEGRAM_API}/setWebhook",
+            f"{_get_api_url()}/setWebhook",
             json={"url": webhook_url},
         )
         return resp.json()
@@ -92,5 +99,5 @@ async def set_webhook(webhook_url: str) -> dict:
 async def get_me() -> dict:
     """Get bot info (verify token works)."""
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(f"{TELEGRAM_API}/getMe")
+        resp = await client.get(f"{_get_api_url()}/getMe")
         return resp.json()
