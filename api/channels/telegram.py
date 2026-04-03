@@ -14,14 +14,12 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
-
 import httpx
 
 logger = logging.getLogger(__name__)
 
 def _get_token() -> str:
-    return os.getenv("TELEGRAM__get_token()", "").strip()
+    return os.getenv("TELEGRAM_BOT_TOKEN", "").strip().strip("'\"")
 
 
 def _get_api_url() -> str:
