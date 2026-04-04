@@ -1735,9 +1735,35 @@ CHAT_CSS = """
     align-items: center;
     text-align: center;
     padding: 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
 }
 .chat-welcome h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-.chat-welcome p { color: var(--text-muted); font-size: 0.9375rem; }
+.chat-welcome p { color: var(--text-muted); font-size: 0.9375rem; margin-bottom: 1.5rem; }
+.starter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    width: 100%;
+}
+@media (max-width: 900px) { .starter-grid { grid-template-columns: repeat(2, 1fr); } }
+.starter-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+.starter-btn:hover {
+    border-color: var(--polly-primary);
+    background: rgba(99,102,241,0.08);
+}
+.starter-btn .s-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.starter-btn .s-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem; }
+.starter-btn .s-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
 .msg {
     max-width: 85%;
     padding: 0.75rem 1rem;
@@ -2108,7 +2134,17 @@ function showSourceDocs(data) {
 // New chat — clear messages and document viewer
 function newChat() {
     var area = document.getElementById('chat-messages');
-    area.innerHTML = '<div class="chat-welcome" id="chat-welcome"><h2>New conversation</h2><p>Choose a tool on the left or type anything below.</p></div>';
+    area.innerHTML = '<div class="chat-welcome" id="chat-welcome">' +
+        '<h2>New conversation</h2>' +
+        '<p>Choose a skill below or type anything to get started.</p>' +
+        '<div class="starter-grid">' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Create a campaign for my latest financial product\\')"><div class="s-icon">🚀</div><div class="s-title">Launch Campaign</div><div class="s-desc">Plan and execute a multi-channel campaign</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Review my marketing content for compliance\\')"><div class="s-icon">🛡️</div><div class="s-title">Compliance Review</div><div class="s-desc">Check content against MiFID II / FCA rules</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Generate a product teaser for my fund\\')"><div class="s-icon">📝</div><div class="s-title">Create Content</div><div class="s-desc">Generate teasers, FAQs, pitch decks</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Show me campaign analytics for this week\\')"><div class="s-icon">📊</div><div class="s-title">Campaign Analytics</div><div class="s-desc">Cross-channel performance reports</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Run an SEO audit on my website\\')"><div class="s-icon">🔍</div><div class="s-title">SEO & Research</div><div class="s-desc">Audits, competitor analysis, market research</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Show me lead activity across channels\\')"><div class="s-icon">📱</div><div class="s-title">Channel Monitor</div><div class="s-desc">Track WhatsApp, email, Telegram responses</div></div>' +
+        '</div></div>';
     var viewer = document.getElementById('doc-viewer');
     viewer.innerHTML = '<div class="doc-empty" id="doc-empty"><div class="icon">📄</div><div class="label">Source documents will appear here when POLLY uses RAG to answer your questions.</div></div>';
     _sessionId = '';
@@ -2183,8 +2219,29 @@ def chat(session):
                 Div(
                     Div(
                         Div(
-                            H2(f"Hi {display}"),
-                            P("Choose a skill on the left or type anything below."),
+                            H2(f"Hi {display}, how can I help?"),
+                            P("Choose a skill below or type anything to get started."),
+                            Div(
+                                _starter_btn("🚀", "Launch Campaign",
+                                             "Plan and execute a multi-channel campaign",
+                                             "Create a campaign for my latest financial product"),
+                                _starter_btn("🛡️", "Compliance Review",
+                                             "Check content against MiFID II / FCA rules",
+                                             "Review my marketing content for compliance"),
+                                _starter_btn("📝", "Create Content",
+                                             "Generate teasers, FAQs, pitch decks",
+                                             "Generate a product teaser for my fund"),
+                                _starter_btn("📊", "Campaign Analytics",
+                                             "Cross-channel performance reports",
+                                             "Show me campaign analytics for this week"),
+                                _starter_btn("🔍", "SEO & Research",
+                                             "Audits, competitor analysis, market research",
+                                             "Run an SEO audit on my website"),
+                                _starter_btn("📱", "Channel Monitor",
+                                             "Track WhatsApp, email, Telegram responses",
+                                             "Show me lead activity across channels"),
+                                cls="starter-grid",
+                            ),
                             cls="chat-welcome",
                             id="chat-welcome",
                         ),
@@ -2235,7 +2292,7 @@ def _starter_btn(icon, title, desc, prompt):
         Div(title, cls="s-title"),
         Div(desc, cls="s-desc"),
         cls="starter-btn",
-        onclick=f"quickChat('{prompt}')",
+        onclick=f"quickCmd('{prompt}')",
     )
 
 
