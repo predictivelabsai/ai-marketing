@@ -13,9 +13,34 @@ services:
       - ARCADE_USER_ID=${ARCADE_USER_ID:-}
       - COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-}
       - DB_URL=${DB_URL:-}
+      - SESSION_SECRET=${SESSION_SECRET:-polly-dev-secret-change-me}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5055/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  polly-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "${API_PORT:-5056}:5056"
+    environment:
+      - API_PORT=5056
+      - XAI_API_KEY=${XAI_API_KEY}
+      - XAI_MODEL=${XAI_MODEL:-grok-3}
+      - ARCADE_API_KEY=${ARCADE_API_KEY:-}
+      - COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-}
+      - DB_URL=${DB_URL:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN:-}
+      - API_BASE_URL=${API_BASE_URL:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5056/health')"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1273,25 +1273,27 @@ function sendMessage() {
     if (!text) return;
     addMessage('user', text);
     input.value = '';
-    setTimeout(() => {
-        showTyping();
-        setTimeout(() => {
-            hideTyping();
-            const lower = text.toLowerCase();
-            if (lower.includes('campaign') || lower.includes('follow up')) {
-                addCampaignCard({ title: 'Smart Follow-Up', segment: '150 high-intent contacts',
-                    variants: [{ type: 'Personalized', text: "Hey [Name], noticed you checked out [Product]. Quick question: what's your biggest priority this quarter?", predicted: '25% reply rate' }] });
-            } else if (lower.includes('best customer') || lower.includes('top') || lower.includes('warm')) {
-                addInsightCard({ title: 'Customer Intelligence',
-                    insights: [{ name: 'Sarah Chen', value: '$24,500 LTV' },{ name: 'Mike Ross', value: '18 referrals' },{ name: 'Emma Davis', value: 'Fastest responder' }],
-                    pattern: 'Top customers engage within 2 hours of campaign send' });
-            } else if (lower.includes('performance') || lower.includes('how did') || lower.includes('comparison') || lower.includes('compare')) {
-                addMessage('polly', 'Recent performance snapshot:\\n\\n📊 Last 7 days:\\n• 3 campaigns sent\\n• 1,247 people reached\\n• 234 responses (18.8%)\\n• 47 meetings booked\\n• $12,400 attributed revenue\\n\\nTop channel: WhatsApp (72% open rate)\\nBest time: Tuesday 10 AM');
-            } else {
-                addMessage('polly', "I can help with that! Here are some things I can do:\\n\\n• Create campaigns with AI-generated copy\\n• Find and rank your best leads\\n• Track responses across all channels\\n• Analyze what's working (and what's not)\\n• Suggest next best actions\\n\\nWhat would you like to focus on?");
-            }
-        }, 2000);
-    }, 500);
+    showTyping();
+
+    var apiBase = window.POLLY_API_URL || (window.location.protocol + '//' + window.location.hostname + ':5056');
+    fetch(apiBase + '/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: text, session_id: null, product_id: null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        hideTyping();
+        var reply = data.text || 'No response received.';
+        if (data.agent && data.tool) {
+            reply = data.agent + ':' + data.tool + ' (' + (data.elapsed_seconds || 0) + 's)\\n\\n' + reply;
+        }
+        addMessage('polly', reply);
+    })
+    .catch(err => {
+        hideTyping();
+        addMessage('polly', 'Error connecting to API: ' + err.message);
+    });
 }
 
 function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
@@ -1457,6 +1459,7 @@ def get():
             ),
             # Toast container
             Div(id="toast-container", cls="toast-container"),
+            Script(f"window.POLLY_API_URL = '{os.environ.get('API_BASE_URL', '')}' || null;"),
             Script(DEMO_JS),
         ),
     )
@@ -1621,46 +1624,130 @@ def logout(session):
 # ---------------------------------------------------------------------------
 
 CHAT_CSS = """
-.chat-page {
+/* 3-pane layout: left shortcuts | center chat | right document viewer */
+.chat-layout {
     height: calc(100vh - 57px);
     display: flex;
-    flex-direction: column;
-    max-width: 820px;
-    margin: 0 auto;
-    padding: 0 1rem;
+    overflow: hidden;
 }
 
-/* Starter grid — shown before first message */
-.starter-section {
+/* Left pane — shortcuts */
+.left-pane {
+    width: 260px;
+    min-width: 260px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+.left-pane-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+.new-chat-btn {
+    width: 100%;
+    padding: 0.625rem;
+    background: linear-gradient(135deg, var(--polly-primary), var(--polly-secondary));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.new-chat-btn:hover { opacity: 0.9; }
+.left-pane-section {
+    padding: 0.75rem 1rem 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+.agent-group { border-bottom: 1px solid var(--border); }
+.agent-group-header {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.15s;
+}
+.agent-group-header:hover { background: rgba(99,102,241,0.06); }
+.agent-group-header .arrow {
+    font-size: 0.625rem;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+}
+.agent-group-header.open .arrow { transform: rotate(90deg); }
+.agent-tools { display: none; }
+.agent-tools.open { display: block; }
+.tool-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 1rem 0.5rem 1.75rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.4;
+}
+.tool-btn:hover {
+    background: rgba(99,102,241,0.08);
+    color: var(--polly-primary);
+}
+.tool-btn .tool-name { font-weight: 500; }
+.tool-btn .tool-desc {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 0.1rem;
+}
+
+/* Center pane — chat */
+.center-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.chat-welcome {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2rem 0;
-}
-.starter-section.hidden { display: none; }
-.starter-greeting {
     text-align: center;
-    margin-bottom: 2rem;
+    padding: 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
 }
-.starter-greeting h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-.starter-greeting p {
-    color: var(--text-secondary);
-    font-size: 1rem;
-}
+.chat-welcome h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+.chat-welcome p { color: var(--text-muted); font-size: 0.9375rem; margin-bottom: 1.5rem; }
 .starter-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
     width: 100%;
-    max-width: 700px;
 }
-@media (max-width: 640px) { .starter-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) { .starter-grid { grid-template-columns: repeat(2, 1fr); } }
 .starter-btn {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1677,27 +1764,17 @@ CHAT_CSS = """
 .starter-btn .s-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
 .starter-btn .s-title { font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem; }
 .starter-btn .s-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
-
-/* Messages area */
-.chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem 0;
-    display: none;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-.chat-messages.active { display: flex; }
-
 .msg {
-    max-width: 80%;
-    padding: 0.875rem 1.25rem;
-    border-radius: 18px;
-    font-size: 0.9375rem;
+    max-width: 85%;
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+    font-size: 0.875rem;
     line-height: 1.6;
-    animation: msgIn 0.3s ease;
+    animation: msgIn 0.25s ease;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
-@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 .msg.bot {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1711,60 +1788,152 @@ CHAT_CSS = """
     border-bottom-right-radius: 4px;
 }
 .msg-time {
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     color: var(--text-muted);
-    margin-top: 0.25rem;
-    text-align: right;
+    margin-top: 0.2rem;
 }
-
+.msg-source {
+    font-size: 0.6875rem;
+    color: var(--polly-secondary);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
 .typing-dots {
-    display: flex; gap: 0.25rem; padding: 0.875rem 1.25rem;
+    display: flex; gap: 0.25rem; padding: 0.75rem 1rem;
     align-self: flex-start; background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 18px; border-bottom-left-radius: 4px;
+    border-radius: 16px; border-bottom-left-radius: 4px;
 }
 .typing-dots span {
-    width: 8px; height: 8px; background: var(--text-muted);
+    width: 7px; height: 7px; background: var(--text-muted);
     border-radius: 50%; animation: dotBounce 1.4s infinite;
 }
 .typing-dots span:nth-child(2){animation-delay:0.2s}
 .typing-dots span:nth-child(3){animation-delay:0.4s}
-@keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+@keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }
 
-/* Input bar — centered, larger */
 .chat-input-bar {
-    padding: 1.25rem 0;
+    padding: 0.75rem 1rem;
     display: flex;
-    gap: 0.75rem;
+    gap: 0.5rem;
     align-items: center;
+    border-top: 1px solid var(--border);
+    background: var(--bg-dark);
 }
 .chat-input-bar textarea {
     flex: 1;
-    padding: 1rem 1.25rem;
+    padding: 0.75rem 1rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 12px;
     color: white;
-    font-size: 1.05rem;
+    font-size: 0.9375rem;
     font-family: inherit;
     outline: none;
     resize: none;
-    min-height: 56px;
-    max-height: 150px;
+    min-height: 44px;
+    max-height: 120px;
     line-height: 1.5;
 }
 .chat-input-bar textarea:focus { border-color: var(--polly-primary); }
 .chat-input-bar textarea::placeholder { color: var(--text-muted); }
 .chat-input-bar button {
-    width: 52px; height: 52px;
+    width: 44px; height: 44px;
     background: var(--polly-primary);
-    border: none; border-radius: 50%; color: white;
+    border: none; border-radius: 10px; color: white;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: transform 0.2s;
-    box-shadow: 0 2px 12px rgba(99,102,241,0.4);
+    cursor: pointer; transition: transform 0.15s;
     flex-shrink: 0;
 }
-.chat-input-bar button:hover { transform: scale(1.08); }
+.chat-input-bar button:hover { transform: scale(1.05); }
+
+/* Right pane — document viewer */
+.right-pane {
+    width: 340px;
+    min-width: 340px;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.right-pane-header {
+    padding: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.doc-viewer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+.doc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 2rem;
+}
+.doc-empty .icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.4; }
+.doc-empty .label { font-size: 0.8125rem; line-height: 1.5; }
+.doc-chunk {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.875rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    animation: msgIn 0.25s ease;
+}
+.doc-chunk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.doc-chunk-title {
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--polly-primary);
+}
+.doc-chunk-meta {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+}
+.doc-chunk-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.doc-filename {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 8px;
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--polly-secondary);
+    font-weight: 500;
+}
+
+@media (max-width: 1100px) {
+    .right-pane { display: none; }
+    .left-pane { width: 220px; min-width: 220px; }
+}
+@media (max-width: 768px) {
+    .left-pane { display: none; }
+}
 
 /* Profile page */
 .profile-page {
@@ -1847,17 +2016,9 @@ CHAT_CSS = """
 """
 
 CHAT_JS = """
-var started = false;
-function startChat() {
-    if (!started) {
-        started = true;
-        document.getElementById('starter').classList.add('hidden');
-        document.getElementById('chat-messages').classList.add('active');
-    }
-}
-
 function addMsg(sender, text) {
-    startChat();
+    var welcome = document.getElementById('chat-welcome');
+    if (welcome) welcome.remove();
     var area = document.getElementById('chat-messages');
     var div = document.createElement('div');
     div.className = 'msg ' + sender;
@@ -1868,7 +2029,6 @@ function addMsg(sender, text) {
 }
 
 function showTyping() {
-    startChat();
     var area = document.getElementById('chat-messages');
     var div = document.createElement('div');
     div.className = 'typing-dots'; div.id = 'typing';
@@ -1878,6 +2038,8 @@ function showTyping() {
 }
 function hideTyping() { var t = document.getElementById('typing'); if(t) t.remove(); }
 
+var _sessionId = '';
+
 function sendChat() {
     var inp = document.getElementById('chat-input');
     var text = inp.value.trim();
@@ -1885,44 +2047,115 @@ function sendChat() {
     addMsg('user', text);
     inp.value = '';
     inp.style.height = 'auto';
-    setTimeout(function() {
-        showTyping();
-        setTimeout(function() {
-            hideTyping();
-            var lower = text.toLowerCase();
-            if (lower.includes('campaign') || lower.includes('follow up') || lower.includes('launch')) {
-                addMsg('bot', "I can help with that campaign! Here's what I'll need:\\n\\n1. **Product** — which financial product?\\n2. **Audience** — target investor segment\\n3. **Channels** — email, WhatsApp, Telegram, LinkedIn?\\n4. **Timeline** — when to start?\\n\\nJust tell me the details and I'll draft a campaign brief with compliant copy.");
-            } else if (lower.includes('compliance') || lower.includes('review') || lower.includes('check')) {
-                addMsg('bot', "I'll review that for compliance. Send me the marketing content and I'll check it against:\\n\\n• MiFID II requirements\\n• FCA fair/clear/not misleading rules\\n• Required risk warnings\\n• Target market restrictions\\n\\nPaste the content and I'll flag any issues.");
-            } else if (lower.includes('teaser') || lower.includes('faq') || lower.includes('pitch') || lower.includes('content')) {
-                addMsg('bot', "I can generate that for you! To create compliant marketing materials, I'll use your approved product documents.\\n\\nAvailable formats:\\n• **Teaser** — one-pager with risk warnings\\n• **FAQ** — from prospectus/term sheet\\n• **Pitch Deck** — slide-by-slide content\\n• **Email Sequence** — nurture or launch series\\n\\nWhich product should I create this for?");
-            } else if (lower.includes('analytics') || lower.includes('performance') || lower.includes('report') || lower.includes('channel')) {
-                addMsg('bot', "Here's your latest campaign snapshot:\\n\\n📊 **Last 7 days:**\\n• 3 campaigns active\\n• 1,247 contacts reached\\n• 234 responses (18.8%)\\n• 47 meetings booked\\n\\n📱 **Top channel:** WhatsApp (72% open rate)\\n⏰ **Best send time:** Tuesday 10 AM\\n\\nWant me to drill into a specific campaign?");
-            } else if (lower.includes('seo') || lower.includes('audit') || lower.includes('search')) {
-                addMsg('bot', "I can help with SEO! Here's what I offer:\\n\\n🔍 **Technical Audit** — meta tags, headings, schema markup\\n🤖 **AI SEO** — optimize for AI search engines (AEO/LLMO)\\n📊 **Competitor Analysis** — compare your SEO vs competitors\\n🏗️ **Schema Markup** — generate JSON-LD structured data\\n\\nShare a URL or tell me what you need.");
-            } else if (lower.includes('lead') || lower.includes('contact') || lower.includes('crm')) {
-                addMsg('bot', "Lead management is key! I can help with:\\n\\n🎯 **Lead Scoring** — prioritize by engagement level\\n📋 **Lead Categorization** — hot, warm, questions, removal\\n🔄 **Automated Follow-up** — for non-responders\\n📤 **Sales Handoff** — qualified leads to your team\\n\\nWhich campaign's leads should we look at?");
-            } else {
-                addMsg('bot', "I can help with that! Here's what I do best:\\n\\n🚀 **Campaigns** — create, A/B test, automate follow-ups\\n🛡️ **Compliance** — review content, risk warnings, MiFID checks\\n📝 **Content** — teasers, FAQs, pitch decks, email sequences\\n📊 **Analytics** — cross-channel performance reports\\n📱 **Channels** — WhatsApp, Telegram, email, LinkedIn, X\\n🔍 **SEO** — audits, schema markup, AI search optimization\\n\\nJust tell me what you need!");
-            }
-        }, 1500);
-    }, 300);
+
+    showTyping();
+    var userId = document.body.getAttribute('data-user-id') || 'web-anonymous';
+
+    var apiBase = window.POLLY_API_URL || (window.location.protocol + '//' + window.location.hostname + ':5056');
+    fetch(apiBase + '/chat?user_id=' + encodeURIComponent(userId), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            message: text,
+            session_id: _sessionId || null,
+            product_id: null
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        hideTyping();
+        if (data.session_id) _sessionId = data.session_id;
+        var status = data.status || 'success';
+        var reply = data.text || 'No response received.';
+        if (data.agent && data.tool) {
+            reply = '**' + data.agent + ':' + data.tool + '** (' + (data.elapsed_seconds || 0) + 's)\\n\\n' + reply;
+        }
+        addMsg('bot', reply);
+        if (data.data) showSourceDocs(data.data);
+    })
+    .catch(function(err) {
+        hideTyping();
+        addMsg('bot', 'Error: ' + err.message + '. Please try again.');
+    });
 }
 
 function handleChatKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
 }
 
-function quickChat(text) {
-    document.getElementById('chat-input').value = text;
+function quickCmd(cmd) {
+    document.getElementById('chat-input').value = cmd;
     sendChat();
+}
+
+// Left pane — toggle agent groups
+function toggleGroup(header) {
+    header.classList.toggle('open');
+    var tools = header.nextElementSibling;
+    tools.classList.toggle('open');
+}
+
+// Right pane — show source documents
+function showSourceDocs(data) {
+    var viewer = document.getElementById('doc-viewer');
+    var empty = document.getElementById('doc-empty');
+    if (!data || !data.sources || data.sources.length === 0) return;
+    if (empty) empty.style.display = 'none';
+
+    // Clear previous docs
+    var existing = viewer.querySelectorAll('.doc-chunk, .doc-filename');
+    existing.forEach(function(el) { el.remove(); });
+
+    // Show filenames
+    var files = {};
+    data.sources.forEach(function(s) {
+        if (s.filename && !files[s.filename]) {
+            files[s.filename] = true;
+            var div = document.createElement('div');
+            div.className = 'doc-filename';
+            div.textContent = s.filename + (s.doc_type ? ' (' + s.doc_type + ')' : '');
+            viewer.appendChild(div);
+        }
+    });
+
+    // Show chunks
+    data.sources.forEach(function(s, i) {
+        var chunk = document.createElement('div');
+        chunk.className = 'doc-chunk';
+        chunk.innerHTML = '<div class="doc-chunk-header">' +
+            '<span class="doc-chunk-title">' + (s.section_name || 'Section ' + (i+1)) + '</span>' +
+            '<span class="doc-chunk-meta">' + (s.similarity ? (s.similarity * 100).toFixed(0) + '% match' : '') + '</span>' +
+            '</div>' +
+            '<div class="doc-chunk-text">' + (s.content || '').substring(0, 500) + '</div>';
+        viewer.appendChild(chunk);
+    });
+}
+
+// New chat — clear messages and document viewer
+function newChat() {
+    var area = document.getElementById('chat-messages');
+    area.innerHTML = '<div class="chat-welcome" id="chat-welcome">' +
+        '<h2>New conversation</h2>' +
+        '<p>Choose a skill below or type anything to get started.</p>' +
+        '<div class="starter-grid">' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Create a campaign for my latest financial product\\')"><div class="s-icon">🚀</div><div class="s-title">Launch Campaign</div><div class="s-desc">Plan and execute a multi-channel campaign</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Review my marketing content for compliance\\')"><div class="s-icon">🛡️</div><div class="s-title">Compliance Review</div><div class="s-desc">Check content against MiFID II / FCA rules</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Generate a product teaser for my fund\\')"><div class="s-icon">📝</div><div class="s-title">Create Content</div><div class="s-desc">Generate teasers, FAQs, pitch decks</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Show me campaign analytics for this week\\')"><div class="s-icon">📊</div><div class="s-title">Campaign Analytics</div><div class="s-desc">Cross-channel performance reports</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Run an SEO audit on my website\\')"><div class="s-icon">🔍</div><div class="s-title">SEO & Research</div><div class="s-desc">Audits, competitor analysis, market research</div></div>' +
+        '<div class="starter-btn" onclick="quickCmd(\\'Show me lead activity across channels\\')"><div class="s-icon">📱</div><div class="s-title">Channel Monitor</div><div class="s-desc">Track WhatsApp, email, Telegram responses</div></div>' +
+        '</div></div>';
+    var viewer = document.getElementById('doc-viewer');
+    viewer.innerHTML = '<div class="doc-empty" id="doc-empty"><div class="icon">📄</div><div class="label">Source documents will appear here when POLLY uses RAG to answer your questions.</div></div>';
+    _sessionId = '';
+    document.getElementById('chat-input').focus();
 }
 
 // Auto-resize textarea
 document.addEventListener('input', function(e) {
     if (e.target.id === 'chat-input') {
         e.target.style.height = 'auto';
-        e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
+        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
     }
 });
 """
@@ -1935,6 +2168,35 @@ def chat(session):
         return RedirectResponse("/signin")
 
     display = user.get("display_name", "there")
+
+    # Build left pane — agent groups with tools
+    agent_groups = {}
+    for agent, tool, desc in SKILLS_DATA:
+        agent_groups.setdefault(agent, []).append((tool, desc))
+
+    left_groups = []
+    for agent, tools in agent_groups.items():
+        tool_btns = [
+            Button(
+                Span(t, cls="tool-name"), Span(d, cls="tool-desc"),
+                cls="tool-btn",
+                onclick=f"quickCmd('{agent}:{t}')",
+            )
+            for t, d in tools
+        ]
+        left_groups.append(
+            Div(
+                Div(
+                    Span(agent.title()),
+                    Span("▶", cls="arrow"),
+                    cls="agent-group-header",
+                    onclick="toggleGroup(this)",
+                ),
+                Div(*tool_btns, cls="agent-tools"),
+                cls="agent-group",
+            )
+        )
+
     return Html(
         Head(
             Title("Chat with POLLY"),
@@ -1943,53 +2205,83 @@ def chat(session):
         Body(
             Navbar(active="chat", user=user),
             Div(
-                # Starter section — 6 buttons, centered
+                # Left pane — shortcuts
                 Div(
                     Div(
-                        H1(f"Hi {display}, how can I help?"),
-                        P("Choose a skill below or type anything to get started."),
-                        cls="starter-greeting",
+                        Button("+ New Chat", cls="new-chat-btn", onclick="newChat()"),
+                        cls="left-pane-header",
+                    ),
+                    Div("Agents & Tools", cls="left-pane-section"),
+                    *left_groups,
+                    cls="left-pane",
+                ),
+                # Center pane — chat
+                Div(
+                    Div(
+                        Div(
+                            H2(f"Hi {display}, how can I help?"),
+                            P("Choose a skill below or type anything to get started."),
+                            Div(
+                                _starter_btn("🚀", "Launch Campaign",
+                                             "Plan and execute a multi-channel campaign",
+                                             "Create a campaign for my latest financial product"),
+                                _starter_btn("🛡️", "Compliance Review",
+                                             "Check content against MiFID II / FCA rules",
+                                             "Review my marketing content for compliance"),
+                                _starter_btn("📝", "Create Content",
+                                             "Generate teasers, FAQs, pitch decks",
+                                             "Generate a product teaser for my fund"),
+                                _starter_btn("📊", "Campaign Analytics",
+                                             "Cross-channel performance reports",
+                                             "Show me campaign analytics for this week"),
+                                _starter_btn("🔍", "SEO & Research",
+                                             "Audits, competitor analysis, market research",
+                                             "Run an SEO audit on my website"),
+                                _starter_btn("📱", "Channel Monitor",
+                                             "Track WhatsApp, email, Telegram responses",
+                                             "Show me lead activity across channels"),
+                                cls="starter-grid",
+                            ),
+                            cls="chat-welcome",
+                            id="chat-welcome",
+                        ),
+                        id="chat-messages", cls="chat-messages",
                     ),
                     Div(
-                        _starter_btn("🚀", "Launch Campaign",
-                                     "Plan and execute a multi-channel campaign",
-                                     "Create a campaign for my latest financial product"),
-                        _starter_btn("🛡️", "Compliance Review",
-                                     "Check content against MiFID II / FCA rules",
-                                     "Review my marketing content for compliance"),
-                        _starter_btn("📝", "Create Content",
-                                     "Generate teasers, FAQs, pitch decks",
-                                     "Generate a product teaser for my fund"),
-                        _starter_btn("📊", "Campaign Analytics",
-                                     "Cross-channel performance reports",
-                                     "Show me campaign analytics for this week"),
-                        _starter_btn("🔍", "SEO & Research",
-                                     "Audits, competitor analysis, market research",
-                                     "Run an SEO audit on my website"),
-                        _starter_btn("📱", "Channel Monitor",
-                                     "Track WhatsApp, email, Telegram responses",
-                                     "Show me lead activity across channels"),
-                        cls="starter-grid",
+                        NotStr('<textarea id="chat-input" placeholder="Message POLLY... (Enter to send)" '
+                               'onkeydown="handleChatKey(event)" rows="1"></textarea>'),
+                        Button(
+                            NotStr('<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                                   '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
+                                   'd="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'),
+                            onclick="sendChat()",
+                        ),
+                        cls="chat-input-bar",
                     ),
-                    id="starter", cls="starter-section",
+                    cls="center-pane",
                 ),
-                # Messages area — hidden until first message
-                Div(id="chat-messages", cls="chat-messages"),
-                # Input bar — centered, larger textarea
+                # Right pane — document viewer
                 Div(
-                    NotStr('<textarea id="chat-input" placeholder="Message POLLY... (Enter to send, Shift+Enter for new line)" '
-                           'onkeydown="handleChatKey(event)" rows="1"></textarea>'),
-                    Button(
-                        NotStr('<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
-                               '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" '
-                               'd="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'),
-                        onclick="sendChat()",
+                    Div(
+                        Span("Source Documents"),
+                        cls="right-pane-header",
                     ),
-                    cls="chat-input-bar",
+                    Div(
+                        Div(
+                            Div("📄", cls="icon"),
+                            Div("Source documents will appear here when POLLY uses RAG to answer your questions.", cls="label"),
+                            cls="doc-empty",
+                            id="doc-empty",
+                        ),
+                        id="doc-viewer", cls="doc-viewer",
+                    ),
+                    cls="right-pane",
                 ),
-                cls="chat-page",
+                cls="chat-layout",
             ),
+            Script(f"window.POLLY_API_URL = '{os.environ.get('API_BASE_URL', '')}' || null;"),
             Script(CHAT_JS),
+            data_user_id=user.get("user_id", ""),
         ),
     )
 
@@ -2000,7 +2292,7 @@ def _starter_btn(icon, title, desc, prompt):
         Div(title, cls="s-title"),
         Div(desc, cls="s-desc"),
         cls="starter-btn",
-        onclick=f"quickChat('{prompt}')",
+        onclick=f"quickCmd('{prompt}')",
     )
 
 
